@@ -33,6 +33,7 @@ export function mapRewriteRow(row: RewriteRow): NewsRewrite {
     id: row.id,
     articleId: row.article_id,
     mood: row.mood,
+    locale: row.locale,
     title: row.title,
     summary: row.summary,
     model: row.model,

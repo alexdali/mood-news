@@ -94,4 +94,25 @@ describe("Fact Lock validator", () => {
     expect(result.passed).toBe(false);
     expect(result.addedFacts.some((fact) => fact.toLowerCase().includes("donald trump"))).toBe(true);
   });
+
+  it("rejects an English rewrite when Russian was requested", () => {
+    const protectedText = protectArticleText("article_test", original.title, original.summary);
+    const result = validateProtectedVariant({
+      protectedText,
+      original,
+      targetLocale: "ru",
+      output: { title: `Carefully, ${protectedText.title}`, summary: `Looking ahead, ${protectedText.summary}` },
+    });
+    expect(result.issues.map((issue) => issue.code)).toContain("WRONG_LANGUAGE");
+  });
+
+  it("detects newly invented Cyrillic named entities", () => {
+    const protectedText = protectArticleText("article_test", original.title, original.summary);
+    const result = validateProtectedVariant({
+      protectedText,
+      original,
+      output: { title: protectedText.title, summary: `${protectedText.summary} Владимир Путин прокомментировал решение.` },
+    });
+    expect(result.addedFacts.some((fact) => fact.includes("владимир путин"))).toBe(true);
+  });
 });

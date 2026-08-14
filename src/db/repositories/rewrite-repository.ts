@@ -5,6 +5,7 @@ import { nowIso } from "@/core/time";
 import type { Mood } from "@/domain/news/mood";
 import type { NewsRewrite, RewriteVariantInput } from "@/domain/news/rewrite";
 import type { FactValidationResult } from "@/domain/fact-lock/validation";
+import type { Locale } from "@/i18n/ui";
 import type { RewriteRow, ValidationRunRow } from "@/db/schema";
 import { mapRewriteRow } from "@/db/row-mappers";
 import { parseJson } from "@/core/json";
@@ -20,6 +21,7 @@ export class RewriteRepository {
   saveValidatedBatch(input: {
     articleId: string;
     model: string;
+    locale: Locale;
     promptVersion: string;
     variants: RewriteVariantInput[];
     validations: Map<Mood, FactValidationResult>;
@@ -28,20 +30,20 @@ export class RewriteRepository {
       for (const variant of input.variants) {
         const existing = this.db.prepare(`
           SELECT id FROM rewrites
-          WHERE article_id = ? AND mood = ? AND prompt_version = ?
-        `).get(input.articleId, variant.mood, input.promptVersion) as { id: string } | undefined;
+          WHERE article_id = ? AND mood = ? AND locale = ? AND prompt_version = ?
+        `).get(input.articleId, variant.mood, input.locale, input.promptVersion) as { id: string } | undefined;
 
         const rewriteId = existing?.id ?? createId("rewrite");
         const now = nowIso();
         this.db.prepare(`
           INSERT INTO rewrites(
-            id, article_id, mood, title, summary, model, prompt_version,
+            id, article_id, mood, locale, title, summary, model, prompt_version,
             status, created_at, updated_at
           ) VALUES (
-            @id, @articleId, @mood, @title, @summary, @model, @promptVersion,
+            @id, @articleId, @mood, @locale, @title, @summary, @model, @promptVersion,
             'validated', @now, @now
           )
-          ON CONFLICT(article_id, mood, prompt_version) DO UPDATE SET
+          ON CONFLICT(article_id, mood, locale, prompt_version) DO UPDATE SET
             title = excluded.title,
             summary = excluded.summary,
             model = excluded.model,
@@ -51,6 +53,7 @@ export class RewriteRepository {
           id: rewriteId,
           articleId: input.articleId,
           mood: variant.mood,
+          locale: input.locale,
           title: variant.title,
           summary: variant.summary,
           model: input.model,
@@ -85,11 +88,11 @@ export class RewriteRepository {
     save();
   }
 
-  find(articleId: string, mood: Mood, promptVersion: string): RewriteWithValidation | null {
+  find(articleId: string, mood: Mood, locale: Locale, promptVersion: string): RewriteWithValidation | null {
     const rewriteRow = this.db.prepare(`
       SELECT * FROM rewrites
-      WHERE article_id = ? AND mood = ? AND prompt_version = ? AND status = 'validated'
-    `).get(articleId, mood, promptVersion) as RewriteRow | undefined;
+      WHERE article_id = ? AND mood = ? AND locale = ? AND prompt_version = ? AND status = 'validated'
+    `).get(articleId, mood, locale, promptVersion) as RewriteRow | undefined;
     if (!rewriteRow) return null;
 
     const validationRow = this.db.prepare(`
@@ -115,12 +118,12 @@ export class RewriteRepository {
     };
   }
 
-  listForArticle(articleId: string, promptVersion: string): NewsRewrite[] {
+  listForArticle(articleId: string, locale: Locale, promptVersion: string): NewsRewrite[] {
     const rows = this.db.prepare(`
       SELECT * FROM rewrites
-      WHERE article_id = ? AND prompt_version = ? AND status = 'validated'
+      WHERE article_id = ? AND locale = ? AND prompt_version = ? AND status = 'validated'
       ORDER BY mood
-    `).all(articleId, promptVersion) as RewriteRow[];
+    `).all(articleId, locale, promptVersion) as RewriteRow[];
     return rows.map(mapRewriteRow);
   }
 

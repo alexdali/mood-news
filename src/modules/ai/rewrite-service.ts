@@ -10,6 +10,7 @@ import { protectArticleText } from "@/modules/fact-lock/placeholder";
 import { restoreArticleFields } from "@/modules/fact-lock/restore";
 import { REWRITE_SYSTEM_PROMPT, buildRewriteUserPrompt } from "@/modules/ai/prompts";
 import { ModelRouter } from "@/modules/ai/model-router";
+import type { Locale } from "@/i18n/ui";
 
 export class RewriteService {
   constructor(
@@ -20,11 +21,11 @@ export class RewriteService {
     private readonly events = new EventRepository(),
   ) {}
 
-  async rewriteArticle(article: NewsArticle): Promise<{ model: string; moods: number }> {
+  async rewriteArticle(article: NewsArticle, locale: Locale): Promise<{ model: string; moods: number; locale: Locale }> {
     const env = getEnv();
-    const existing = this.rewrites.listForArticle(article.id, env.AI_PROMPT_VERSION);
+    const existing = this.rewrites.listForArticle(article.id, locale, env.AI_PROMPT_VERSION);
     if (existing.length === moods.length) {
-      return { model: existing[0]?.model ?? "cached", moods: existing.length };
+      return { model: existing[0]?.model ?? "cached", moods: existing.length, locale };
     }
 
     const today = new Date();
@@ -36,6 +37,7 @@ export class RewriteService {
         model: env.AI_PRIMARY_MODEL,
         modelRole: "primary",
         status: "budget_blocked",
+        locale,
         latencyMs: 0,
         errorCode: "AI_BUDGET_EXCEEDED",
         errorMessage: `Spent $${spent.toFixed(4)} of $${env.MAX_DAILY_AI_COST_USD.toFixed(2)}`,
@@ -50,11 +52,13 @@ export class RewriteService {
       articleId: article.id,
       protectedText,
       original: { title: article.title, summary: article.summary },
+      targetLocale: locale,
       systemPrompt: REWRITE_SYSTEM_PROMPT,
       userPrompt: buildRewriteUserPrompt({
         protectedText,
         sourceName: article.sourceName,
         publishedAt: article.publishedAt,
+        targetLocale: locale,
       }),
     });
 
@@ -65,6 +69,7 @@ export class RewriteService {
     this.rewrites.saveValidatedBatch({
       articleId: article.id,
       model: result.model,
+      locale,
       promptVersion: env.AI_PROMPT_VERSION,
       variants: restoredVariants,
       validations: result.validations,
@@ -72,8 +77,8 @@ export class RewriteService {
     this.events.record("rewrite.validated", {
       entityType: "news_article",
       entityId: article.id,
-      payload: { model: result.model, promptVersion: env.AI_PROMPT_VERSION, moods: moods.length },
+      payload: { model: result.model, promptVersion: env.AI_PROMPT_VERSION, locale, moods: moods.length },
     });
-    return { model: result.model, moods: moods.length };
+    return { model: result.model, moods: moods.length, locale };
   }
 }

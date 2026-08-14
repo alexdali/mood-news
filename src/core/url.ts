@@ -4,6 +4,8 @@ const TRACKING_PARAMS = new Set([
   "utm_campaign",
   "utm_term",
   "utm_content",
+  "at_medium",
+  "at_campaign",
   "gclid",
   "fbclid",
   "cmpid",

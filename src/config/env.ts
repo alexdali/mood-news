@@ -12,6 +12,12 @@ const csvFromEnv = z.preprocess((value) => {
   return value.split(",").map((item) => item.trim()).filter(Boolean);
 }, z.array(z.string().url()));
 
+const localeCsvFromEnv = z.preprocess((value) => {
+  if (Array.isArray(value)) return value;
+  if (typeof value !== "string") return value;
+  return value.split(",").map((item) => item.trim()).filter(Boolean);
+}, z.array(z.enum(["en", "ru"])).min(1));
+
 const unsafeProductionCronSecrets = new Set([
   "development-only-secret-change-me",
   "replace-with-a-long-random-value",
@@ -55,6 +61,7 @@ const schema = z.object({
   AI_MAX_PROVIDER_RETRIES: z.coerce.number().int().min(0).max(3).default(1),
   AI_RETRY_BASE_DELAY_MS: z.coerce.number().int().min(100).max(10_000).default(600),
   AI_PROMPT_VERSION: z.string().min(1).default("mood-v1"),
+  AI_REWRITE_LOCALES: localeCsvFromEnv.default(["en", "ru"]),
   AI_TEMPERATURE: z.coerce.number().min(0).max(1).default(0.35),
   AI_ENABLE_RESPONSE_HEALING: booleanFromEnv.default(false),
 

@@ -5,6 +5,7 @@
 ```dotenv
 AI_PRIMARY_MODEL=deepseek/deepseek-v4-flash-0731
 AI_FALLBACK_MODEL=openai/gpt-5.6-luna
+AI_REWRITE_LOCALES=en,ru
 ```
 
 Обе модели вызываются через OpenRouter. IDs вынесены в environment. Проверка для конкретного key:
@@ -13,7 +14,9 @@ AI_FALLBACK_MODEL=openai/gpt-5.6-luna
 npm run verify:models
 ```
 
-## Один запрос — четыре moods
+## Один locale-batch — четыре moods
+
+Worker обрабатывает настроенные языки независимо. Для `en` и `ru` выполняются отдельные вызовы, потому что каждый batch имеет собственный target-language prompt, Fact Lock verdict и строки хранения.
 
 Ответ:
 
@@ -38,6 +41,8 @@ OpenRouter request содержит strict JSON Schema. После ответа 
 - ровно 4 variants;
 - все mood IDs;
 - title/summary length.
+
+После восстановления exact facts валидатор также проверяет, что свободная проза соответствует запрошенному языку. Placeholder-токены исключаются из языковой эвристики; для русской версии дополнительно распознаются новые именованные сущности на кириллице.
 
 ## Reasoning
 
@@ -82,4 +87,4 @@ Luna вызывается после:
 
 ## Fail-closed behavior
 
-Ни primary, ни fallback не могут записать output напрямую. Сохранение выполняет `RewriteService` только после полного accepted batch.
+Ни primary, ни fallback не могут записать output напрямую. Сохранение выполняет `RewriteService` только после полного accepted batch. Cache и БД разделены по `(article, mood, locale, promptVersion)`.

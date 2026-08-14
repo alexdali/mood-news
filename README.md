@@ -7,9 +7,11 @@
 - `concerned` — обеспокоенно, но без нагнетания новых рисков;
 - `ironic` — с лёгкой ситуационной иронией, без насмешки над людьми и трагедиями.
 
+Интерфейс двуязычный (`RU / EN`). Язык хранится в query-параметре `lang`, сохраняется при навигации и определяет не только подписи UI, но и целевой язык AI-версии новости. Оригинал источника всегда остаётся неизменным в сравнении.
+
 Главный принцип продукта: **AI меняет подачу, а код контролирует фактические якоря**. Результат модели не публикуется автоматически. Он проходит строгую JSON-проверку и детерминированный Fact Lock. При сбое DeepSeek или при провале проверки запрос повторяется через GPT‑5.6 Luna.
 
-Репозиторий рассчитан как сильная стартовая база для тестового задания на 3 дня: не production-медиаплатформа, а целостный vertical slice, в котором видны работа с реальными данными, архитектурные решения, AI routing, валидация, хранение, тестирование и объяснимость.
+Репозиторий реализован как развёртываемый vertical slice тестового задания: не production-медиаплатформа, но законченное приложение с реальными данными, AI routing, валидацией, постоянным хранением, тестами и Docker-деплоем.
 
 ---
 
@@ -21,6 +23,7 @@
 | Сохранение новостей | SQLite: текущая проекция, сырые payloads и immutable snapshots версий |
 | Новости гридом | Главная страница `/` и `src/components/news-grid.tsx` |
 | Переключатель настроения | Глобальный `MoodSwitcher`; выбранный mood хранится в URL |
+| Русский и английский интерфейс и контент | `RU / EN` в верхнем баре; `lang` проходит через UI/API/worker/prompt, rewrites хранятся отдельно по locale |
 | Исходный и переписанный текст рядом | `/news/[id]`, компонент `ArticleComparison` |
 | Ссылка на оригинал | `canonical_url` хранится в БД и показывается на карточке и странице сравнения |
 | Нельзя писать версии вручную | Все варианты создаются через OpenRouter и сохраняются с model/prompt metadata |
@@ -45,6 +48,7 @@
 - Основная модель `deepseek/deepseek-v4-flash-0731` через OpenRouter.
 - Fallback `openai/gpt-5.6-luna` через OpenRouter.
 - Один AI-вызов сразу для четырёх moods.
+- Отдельные проверенные batches для `en` и `ru`; модель получает обязательный target locale.
 - Strict JSON Schema + повторная Zod-проверка.
 - Application-level fallback при provider, JSON или Fact Lock failure.
 - Fact extractors для URL, цитат, денег, процентов, дат, времени, чисел и вероятных сущностей.
@@ -109,7 +113,7 @@ flowchart LR
   PENDING --> LOCK[Fact Lock placeholders]
   LOCK --> DS[DeepSeek V4 Flash]
   DS --> GATE{Schema + deterministic checks}
-  GATE -- pass --> SAVE[Restore exact facts + save 4 moods]
+  GATE -- pass --> SAVE[Restore exact facts + save 4 moods for locale]
   GATE -- fail --> LUNA[GPT-5.6 Luna]
   LUNA --> GATE2{Same checks}
   GATE2 -- pass --> SAVE
@@ -298,6 +302,7 @@ AI_REQUEST_TIMEOUT_MS=45000
 AI_MAX_PROVIDER_RETRIES=1
 AI_RETRY_BASE_DELAY_MS=600
 AI_PROMPT_VERSION=mood-v1
+AI_REWRITE_LOCALES=en,ru
 AI_TEMPERATURE=0.35
 ```
 
@@ -347,7 +352,7 @@ Ledger хранит точные значения, поле, offsets и extracto
 
 ### 8.3 Generation
 
-DeepSeek получает только protected title/summary и инструкции для всех четырёх moods. Ответ должен соответствовать strict JSON Schema:
+DeepSeek получает только protected title/summary, целевой язык (`en` или `ru`) и инструкции для всех четырёх moods. Placeholder-токены остаются неизменными независимо от языка. Ответ должен соответствовать strict JSON Schema:
 
 ```json
 {
@@ -371,6 +376,7 @@ DeepSeek получает только protected title/summary и инструк
 - после восстановления не появились новые числа, даты, деньги, проценты, цитаты, URL или высокоуверенные named entities;
 - rewrite не стал аномально коротким или длинным;
 - модель не вернула meta-commentary.
+- проза соответствует запрошенному языку (Unicode-aware проверка Latin/Cyrillic после исключения placeholders).
 
 Если хотя бы один из четырёх вариантов не прошёл, весь ответ DeepSeek отклоняется.
 
@@ -391,7 +397,7 @@ Luna проходит **те же проверки**. Fallback не означа
 
 ### 8.6 Persistence
 
-Только полностью проверенный batch сохраняется как четыре `validated` rewrites. В UI оригинал остаётся доступным всегда.
+Только полностью проверенный batch сохраняется как четыре `validated` rewrites для конкретного locale. Английский и русский batches не перезаписывают друг друга: уникальность — `(article_id, mood, locale, prompt_version)`. При `AI_REWRITE_LOCALES=en,ru` одна статья может иметь восемь актуальных rewrite-записей. В UI оригинал остаётся доступным всегда.
 
 Подробнее: [`docs/AI_PIPELINE.md`](docs/AI_PIPELINE.md) и [`docs/FACT_LOCK.md`](docs/FACT_LOCK.md).
 
@@ -415,7 +421,7 @@ SQLite-файл по умолчанию:
 | `news_articles` | Текущая нормализованная версия статьи |
 | `article_snapshots` | Immutable raw + normalized snapshot каждой changed version |
 | `protected_facts` | Fact ledger и placeholders |
-| `rewrites` | Принятые эмоциональные версии |
+| `rewrites` | Принятые эмоциональные версии с отдельным `locale` |
 | `validation_runs` | Детерминированные verdicts и причины |
 | `ai_runs` | Модель, роль, tokens, cost, latency и ошибки |
 | `job_locks` | Межпроцессные locks для ingest/rewrite cycle |
@@ -453,6 +459,7 @@ DeepSeek response
 
 ### `/`
 
+- глобальный `RU / EN` switcher в верхнем баре;
 - общий mood switcher;
 - responsive grid;
 - источник и время;
@@ -491,15 +498,15 @@ DeepSeek response
 
 ```text
 GET /api/health
-GET /api/news?mood=neutral&limit=24&offset=0
-GET /api/news/:id?mood=concerned
+GET /api/news?mood=neutral&lang=ru&limit=24&offset=0
+GET /api/news/:id?mood=concerned&lang=ru
 GET /api/ops/summary
 ```
 
 Генерация одной статьи:
 
 ```text
-POST /api/news/:id/rewrite
+POST /api/news/:id/rewrite?lang=ru
 ```
 
 Route ограничен простым rate limit и общим дневным AI budget.

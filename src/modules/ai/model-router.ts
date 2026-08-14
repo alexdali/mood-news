@@ -9,6 +9,7 @@ import { AiResponseParseError, OpenRouterClient } from "@/modules/ai/openrouter-
 import type { ValidatedModelResult } from "@/modules/ai/ai-types";
 import { validateProtectedVariant } from "@/modules/fact-lock/validator";
 import { logger } from "@/server/logger";
+import type { Locale } from "@/i18n/ui";
 
 export interface AiRunRecorder {
   record(input: AiRunRecord): string;
@@ -24,6 +25,7 @@ export class ModelRouter {
     articleId: string;
     protectedText: ProtectedArticleText;
     original: { title: string; summary: string };
+    targetLocale: Locale;
     systemPrompt: string;
     userPrompt: string;
   }): Promise<ValidatedModelResult> {
@@ -50,6 +52,7 @@ export class ModelRouter {
             protectedText: input.protectedText,
             original: input.original,
             output: { title: variant.title, summary: variant.summary },
+            targetLocale: input.targetLocale,
           }));
         }
         const failed = [...validations.entries()].filter(([, validation]) => !validation.passed);
@@ -59,6 +62,7 @@ export class ModelRouter {
             model: result.model,
             modelRole: attempt.role,
             status: "validation_error",
+            locale: input.targetLocale,
             latencyMs: result.latencyMs,
             usage: result.usage,
             providerRequestId: result.providerRequestId,
@@ -75,6 +79,7 @@ export class ModelRouter {
           model: result.model,
           modelRole: attempt.role,
           status: "completed",
+          locale: input.targetLocale,
           latencyMs: result.latencyMs,
           usage: result.usage,
           providerRequestId: result.providerRequestId,
@@ -87,6 +92,7 @@ export class ModelRouter {
           model: error instanceof AiResponseParseError ? error.providerModel : attempt.model,
           modelRole: attempt.role,
           status,
+          locale: input.targetLocale,
           latencyMs: Date.now() - startedAt,
           usage: error instanceof AiResponseParseError ? error.usage : undefined,
           providerRequestId: error instanceof AiResponseParseError ? error.providerRequestId : undefined,

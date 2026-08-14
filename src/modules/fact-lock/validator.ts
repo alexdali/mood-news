@@ -5,6 +5,7 @@ import { extractFactsFromField, strictConcreteExtractors } from "@/modules/fact-
 import { entityExtractor } from "@/modules/fact-lock/extractors/entities";
 import { restoreArticleFields } from "@/modules/fact-lock/restore";
 import { getEnv } from "@/config/env";
+import type { Locale } from "@/i18n/ui";
 
 function occurrences(text: string): string[] {
   return text.match(PLACEHOLDER_PATTERN) ?? [];
@@ -41,6 +42,7 @@ export function validateProtectedVariant(input: {
   protectedText: ProtectedArticleText;
   original: { title: string; summary: string };
   output: { title: string; summary: string };
+  targetLocale?: Locale;
 }): FactValidationResult {
   const expected = input.protectedText.facts.map((fact) => fact.placeholder);
   const expectedSet = new Set(expected);
@@ -105,9 +107,16 @@ export function validateProtectedVariant(input: {
     issues.push({ code: "MODEL_META_TEXT", message: "The model returned meta commentary instead of a rewrite" });
   }
 
+  if (input.targetLocale && !matchesTargetLanguage(`${input.output.title} ${input.output.summary}`, input.targetLocale)) {
+    issues.push({
+      code: "WRONG_LANGUAGE",
+      message: `The rewrite does not contain enough ${input.targetLocale === "ru" ? "Russian" : "English"} text`,
+    });
+  }
+
   const preservedCount = expected.filter((placeholder) => counts.get(placeholder) === 1).length;
   const severeIssueCount = missing.length + duplicates.length + unknown.length + addedFacts.length
-    + issues.filter((issue) => ["PLACEHOLDER_MOVED_FIELD", "PLACEHOLDER_ORDER_CHANGED", "LENGTH_OUT_OF_RANGE", "MODEL_META_TEXT"].includes(issue.code)).length;
+    + issues.filter((issue) => ["PLACEHOLDER_MOVED_FIELD", "PLACEHOLDER_ORDER_CHANGED", "LENGTH_OUT_OF_RANGE", "MODEL_META_TEXT", "WRONG_LANGUAGE"].includes(issue.code)).length;
   const score = Math.max(0, Math.round(100 - severeIssueCount * 20));
   return {
     passed: issues.length === 0,
@@ -120,4 +129,12 @@ export function validateProtectedVariant(input: {
     addedFacts,
     issues,
   };
+}
+
+function matchesTargetLanguage(text: string, locale: Locale): boolean {
+  const prose = text.replace(PLACEHOLDER_PATTERN, " ");
+  const letters = prose.match(/\p{L}/gu) ?? [];
+  if (letters.length < 12) return true;
+  const target = locale === "ru" ? prose.match(/[А-ЯЁа-яё]/g) ?? [] : prose.match(/[A-Za-z]/g) ?? [];
+  return target.length / letters.length >= (locale === "ru" ? 0.5 : 0.75);
 }

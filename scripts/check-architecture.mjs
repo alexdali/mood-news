@@ -5,10 +5,12 @@ import path from "node:path";
 const root = process.cwd();
 const failures = [];
 const notes = [];
+const ignoredDirectories = new Set([".git", ".next", "coverage", "node_modules", "playwright-report", "test-results"]);
 
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = path.join(dir, entry.name);
+    if (entry.isDirectory() && ignoredDirectories.has(entry.name)) return [];
     return entry.isDirectory() ? walk(full) : [full];
   });
 }
@@ -31,6 +33,9 @@ const requiredFiles = [
   "migrations/0001_initial.sql",
   "migrations/0002_indexes.sql",
   "migrations/0003_article_snapshots.sql",
+  "migrations/0004_rewrite_locales.sql",
+  "migrations/0005_ai_run_locale.sql",
+  "src/i18n/ui.ts",
   "src/modules/ingestion/ingest-service.ts",
   "src/modules/fact-lock/validator.ts",
   "src/modules/ai/model-router.ts",

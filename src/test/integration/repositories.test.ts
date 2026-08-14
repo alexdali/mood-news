@@ -6,6 +6,11 @@ import { NewsRepository } from "@/db/repositories/news-repository";
 import { JobLockRepository } from "@/db/repositories/job-lock-repository";
 import { SnapshotRepository } from "@/db/repositories/snapshot-repository";
 import { AiRunRepository } from "@/db/repositories/ai-run-repository";
+import { RewriteRepository } from "@/db/repositories/rewrite-repository";
+import { FactRepository } from "@/db/repositories/fact-repository";
+import { NewsDetailService } from "@/modules/news/news-detail-service";
+import type { FactValidationResult } from "@/domain/fact-lock/validation";
+import { moods } from "@/domain/news/mood";
 
 let db: SqliteDatabase | undefined;
 afterEach(() => db?.close());
@@ -99,5 +104,57 @@ describe("SQLite repositories", () => {
       costUsd: 0,
       averageLatencyMs: 0,
     });
+  });
+
+  it("previews the Fact Lock ledger before an AI rewrite exists", () => {
+    db = createDatabase(":memory:");
+    new SourceRepository(db).upsert({ id: "source", kind: "rss", name: "Source", baseUrl: "https://example.com/rss", enabled: true });
+    const news = new NewsRepository(db);
+    const inserted = news.upsert({
+      sourceId: "source", sourceItemId: "pending-1", canonicalUrl: "https://example.com/pending",
+      title: "Paris hosts 24 researchers", summary: "Dr Jane Smith announced the study.",
+      section: null, language: "en", imageUrl: null, byline: null,
+      publishedAt: "2026-08-14T10:00:00Z", fetchedAt: "2026-08-14T10:01:00Z",
+      contentHash: "pending-hash", rawPayload: {},
+    });
+    const detail = new NewsDetailService(
+      news,
+      new RewriteRepository(db),
+      new FactRepository(db),
+    ).get(inserted.articleId, "neutral", "en");
+
+    expect(detail.rewrite).toBeNull();
+    expect(detail.facts.map((fact) => fact.value)).toEqual(expect.arrayContaining(["Paris", "24", "Dr Jane Smith"]));
+  });
+
+  it("stores English and Russian rewrites independently", () => {
+    db = createDatabase(":memory:");
+    new SourceRepository(db).upsert({ id: "source", kind: "rss", name: "Source", baseUrl: "https://example.com/rss", enabled: true });
+    const news = new NewsRepository(db);
+    const inserted = news.upsert({
+      sourceId: "source", sourceItemId: "localized-1", canonicalUrl: "https://example.com/localized",
+      title: "City opens a library", summary: "The library opened on Monday.",
+      section: null, language: "en", imageUrl: null, byline: null,
+      publishedAt: "2026-08-14T10:00:00Z", fetchedAt: "2026-08-14T10:01:00Z",
+      contentHash: "localized-hash", rawPayload: {},
+    });
+    const rewrites = new RewriteRepository(db);
+    const validation: FactValidationResult = {
+      passed: true, score: 1, expectedCount: 0, preservedCount: 0,
+      missing: [], duplicates: [], unknown: [], addedFacts: [], issues: [],
+    };
+    const validations = new Map(moods.map((mood) => [mood, validation]));
+    rewrites.saveValidatedBatch({
+      articleId: inserted.articleId, locale: "en", model: "model", promptVersion: "v1", validations,
+      variants: moods.map((mood) => ({ mood, title: `English ${mood}`, summary: "English summary" })),
+    });
+    rewrites.saveValidatedBatch({
+      articleId: inserted.articleId, locale: "ru", model: "model", promptVersion: "v1", validations,
+      variants: moods.map((mood) => ({ mood, title: `Русский ${mood}`, summary: "Русское описание" })),
+    });
+
+    expect(rewrites.find(inserted.articleId, "neutral", "en", "v1")?.rewrite.title).toBe("English neutral");
+    expect(rewrites.find(inserted.articleId, "neutral", "ru", "v1")?.rewrite.title).toBe("Русский neutral");
+    expect(rewrites.countValidated("v1")).toBe(8);
   });
 });

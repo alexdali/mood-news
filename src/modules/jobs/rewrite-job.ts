@@ -27,21 +27,36 @@ export async function runRewritePendingJob(limit = getEnv().REWRITE_BATCH_SIZE) 
 
   const news = new NewsRepository();
   const service = new RewriteService();
-  const pending = news.listPendingForPrompt(env.AI_PROMPT_VERSION, moods.length, boundedLimit);
+  const pendingByLocale = env.AI_REWRITE_LOCALES.map((locale) => ({
+    locale,
+    articles: news.listPendingForPrompt(env.AI_PROMPT_VERSION, locale, moods.length, boundedLimit),
+  }));
+  const pending: Array<{ article: (typeof pendingByLocale)[number]["articles"][number]; locale: (typeof pendingByLocale)[number]["locale"] }> = [];
+  for (let index = 0; pending.length < boundedLimit; index += 1) {
+    let found = false;
+    for (const group of pendingByLocale) {
+      const article = group.articles[index];
+      if (!article) continue;
+      pending.push({ article, locale: group.locale });
+      found = true;
+      if (pending.length === boundedLimit) break;
+    }
+    if (!found) break;
+  }
   let processed = 0;
   let succeeded = 0;
   let budgetBlocked = false;
   const errors: string[] = [];
   try {
-    for (const article of pending) {
+    for (const { article, locale } of pending) {
       processed += 1;
       try {
-        await service.rewriteArticle(article);
+        await service.rewriteArticle(article, locale);
         succeeded += 1;
       } catch (error) {
-        const message = `${article.id}: ${error instanceof Error ? error.message : String(error)}`;
+        const message = `${article.id}/${locale}: ${error instanceof Error ? error.message : String(error)}`;
         errors.push(message);
-        logger.warn({ err: error, articleId: article.id }, "Pending rewrite failed");
+        logger.warn({ err: error, articleId: article.id, locale }, "Pending rewrite failed");
         if (error instanceof BudgetExceededError) {
           budgetBlocked = true;
           break;

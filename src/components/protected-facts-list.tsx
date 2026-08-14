@@ -1,18 +1,21 @@
 import type { ProtectedFact } from "@/domain/fact-lock/fact";
+import type { Locale } from "@/i18n/ui";
+import { uiCopy } from "@/i18n/ui";
 
-export function ProtectedFactsList({ facts }: { facts: ProtectedFact[] }) {
-  if (facts.length === 0) return <p className="muted">No deterministic concrete facts were detected in this source fragment.</p>;
+export function ProtectedFactsList({ facts, locale }: { facts: ProtectedFact[]; locale: Locale }) {
+  const copy = uiCopy[locale].facts;
+  if (facts.length === 0) return <p className="muted">{copy.empty}</p>;
   return (
-    <div className="facts-table" role="table" aria-label="Protected facts">
+    <div className="facts-table" role="table" aria-label={copy.table}>
       <div className="facts-table__row facts-table__head" role="row">
-        <span>Placeholder</span><span>Type</span><span>Exact source value</span><span>Field</span>
+        <span>{copy.placeholder}</span><span>{copy.type}</span><span>{copy.value}</span><span>{copy.field}</span>
       </div>
       {facts.map((fact) => (
         <div className="facts-table__row" role="row" key={fact.id}>
           <code>{fact.placeholder}</code>
-          <span>{fact.factType}</span>
+          <span>{copy.types[fact.factType]}</span>
           <strong>{fact.value}</strong>
-          <span>{fact.sourceField}</span>
+          <span>{copy.fields[fact.sourceField]}</span>
         </div>
       ))}
     </div>

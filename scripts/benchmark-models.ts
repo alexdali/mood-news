@@ -18,6 +18,7 @@ async function main() {
 
   const models = [...new Set([env.AI_PRIMARY_MODEL, env.AI_FALLBACK_MODEL])];
   const client = new OpenRouterClient();
+  const targetLocale = "en" as const;
   const rows: Array<Record<string, unknown>> = [];
   heading(`Benchmarking ${models.length} models on ${articles.length} imported articles`);
 
@@ -29,12 +30,13 @@ async function main() {
         const result = await client.rewrite({
           model,
           systemPrompt: REWRITE_SYSTEM_PROMPT,
-          userPrompt: buildRewriteUserPrompt({ protectedText, sourceName: article.sourceName, publishedAt: article.publishedAt }),
+          userPrompt: buildRewriteUserPrompt({ protectedText, sourceName: article.sourceName, publishedAt: article.publishedAt, targetLocale }),
         });
         const validations = result.payload.variants.map((variant) => validateProtectedVariant({
           protectedText,
           original: { title: article.title, summary: article.summary },
           output: { title: variant.title, summary: variant.summary },
+          targetLocale,
         }));
         rows.push({
           model,

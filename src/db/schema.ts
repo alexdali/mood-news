@@ -49,6 +49,7 @@ export type RewriteRow = {
   id: string;
   article_id: string;
   mood: string;
+  locale: "en" | "ru";
   title: string;
   summary: string;
   model: string;

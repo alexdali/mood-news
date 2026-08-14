@@ -6,6 +6,7 @@ import { mapArticleRow } from "@/db/row-mappers";
 import { createId } from "@/core/ids";
 import { nowIso } from "@/core/time";
 import { SnapshotRepository } from "@/db/repositories/snapshot-repository";
+import type { Locale } from "@/i18n/ui";
 
 export type ArticleUpsertInput = {
   sourceId: string;
@@ -164,7 +165,7 @@ export class NewsRepository {
     return rows.map(mapArticleRow);
   }
 
-  listPendingForPrompt(promptVersion: string, expectedMoodCount: number, limit: number): NewsArticle[] {
+  listPendingForPrompt(promptVersion: string, locale: Locale, expectedMoodCount: number, limit: number): NewsArticle[] {
     const rows = this.db.prepare(`
       SELECT a.*, s.name AS source_name
       FROM news_articles a
@@ -172,13 +173,14 @@ export class NewsRepository {
       LEFT JOIN rewrites r
         ON r.article_id = a.id
        AND r.prompt_version = @promptVersion
+       AND r.locale = @locale
        AND r.status = 'validated'
       WHERE a.status = 'active'
       GROUP BY a.id
       HAVING COUNT(r.id) < @expectedMoodCount
       ORDER BY a.published_at DESC
       LIMIT @limit
-    `).all({ promptVersion, expectedMoodCount, limit }) as NewsArticleRow[];
+    `).all({ promptVersion, locale, expectedMoodCount, limit }) as NewsArticleRow[];
     return rows.map(mapArticleRow);
   }
 

@@ -37,4 +37,14 @@ describe("news normalization", () => {
     expect(normalizeNewsItem({ ...base, canonicalUrl: "file:///etc/passwd" })).toBeNull();
     expect(normalizeNewsItem({ ...base, canonicalUrl: "https://example.com", summary: "" })).toBeNull();
   });
+
+  it("removes BBC RSS campaign parameters from source links", () => {
+    const item = normalizeNewsItem({
+      sourceId: "bbc", sourceItemId: "bbc-1", sourceName: "BBC", title: "Headline",
+      summary: "Summary", section: null, language: "en", imageUrl: null, byline: null,
+      publishedAt: "2026-08-14T10:00:00Z", rawPayload: {},
+      canonicalUrl: "https://www.bbc.co.uk/news/articles/example?at_medium=RSS&at_campaign=rss",
+    });
+    expect(item?.canonicalUrl).toBe("https://www.bbc.co.uk/news/articles/example");
+  });
 });

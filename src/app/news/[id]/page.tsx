@@ -11,6 +11,7 @@ import { ProtectedFactsList } from "@/components/protected-facts-list";
 import { MoodSwitcher } from "@/components/mood-switcher";
 import { SourceBadge } from "@/components/source-badge";
 import { RewriteButton } from "@/components/rewrite-button";
+import { getLocale, uiCopy } from "@/i18n/ui";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -18,20 +19,22 @@ export const runtime = "nodejs";
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   try {
-    const view = new NewsDetailService().get(id, getEnv().DEFAULT_MOOD);
+    const view = new NewsDetailService().get(id, getEnv().DEFAULT_MOOD, "en");
     return { title: view.article.title };
   } catch {
     return { title: "News comparison" };
   }
 }
 
-export default async function NewsDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ mood?: string }> }) {
+export default async function NewsDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ mood?: string; lang?: string }> }) {
   const { id } = await params;
   const query = await searchParams;
   const mood = isMood(query.mood) ? query.mood : getEnv().DEFAULT_MOOD;
+  const locale = getLocale(query.lang);
+  const copy = uiCopy[locale];
   let view: ReturnType<NewsDetailService["get"]>;
   try {
-    view = new NewsDetailService().get(id, mood);
+    view = new NewsDetailService().get(id, mood, locale);
   } catch (error) {
     if (error instanceof NotFoundError) notFound();
     throw error;
@@ -40,23 +43,23 @@ export default async function NewsDetailPage({ params, searchParams }: { params:
   return (
     <>
       <div className="detail-toolbar">
-        <Link href={`/?mood=${mood}`} className="back-link"><ArrowLeft size={16} /> Back to grid</Link>
-        <MoodSwitcher selected={mood} />
+        <Link href={`/?mood=${mood}&lang=${locale}`} className="back-link"><ArrowLeft size={16} /> {copy.detail.back}</Link>
+        <MoodSwitcher selected={mood} locale={locale} />
       </div>
       <section className="article-heading">
         <div className="article-heading__meta">
           <SourceBadge name={view.article.sourceName} url={view.article.canonicalUrl} />
-          <span><Clock3 size={14} /> Published {view.article.publishedAt}</span>
-          <span><Database size={14} /> Fetched {view.article.fetchedAt}</span>
+          <span><Clock3 size={14} /> {copy.detail.published} {view.article.publishedAt}</span>
+          <span><Database size={14} /> {copy.detail.fetched} {view.article.fetchedAt}</span>
         </div>
-        <h1>Source vs emotional rewrite</h1>
-        <p>The right-hand text is visible as verified only after exact placeholder checks and a second scan for newly introduced concrete facts.</p>
+        <h1>{copy.detail.title}</h1>
+        <p>{copy.detail.intro}</p>
       </section>
-      <ArticleComparison view={view} />
-      {!view.rewrite ? <section className="callout"><div><h2>No validated rewrite yet</h2><p>The original remains visible. Generation will create all four moods and reject the batch if any variant changes a protected fact.</p></div><RewriteButton articleId={view.article.id} /></section> : null}
+      <ArticleComparison view={view} locale={locale} />
+      {!view.rewrite ? <section className="callout"><div><h2>{copy.detail.noRewrite}</h2><p>{copy.detail.noRewriteBody}</p></div><RewriteButton articleId={view.article.id} locale={locale} /></section> : null}
       <section className="method-panel">
-        <header><div><span className="eyebrow"><ShieldCheck size={14} /> Fact Lock audit</span><h2>What was made immutable</h2></div><span>{view.facts.length} protected occurrences</span></header>
-        <ProtectedFactsList facts={view.facts} />
+        <header><div><span className="eyebrow"><ShieldCheck size={14} /> {copy.detail.audit}</span><h2>{view.rewrite ? copy.detail.madeImmutable : copy.detail.willBeImmutable}</h2></div><span>{view.facts.length} {copy.detail.protectedOccurrences}</span></header>
+        <ProtectedFactsList facts={view.facts} locale={locale} />
       </section>
     </>
   );

@@ -1,6 +1,7 @@
 import { NotFoundError } from "@/core/errors";
 import { NewsRepository } from "@/db/repositories/news-repository";
 import { RewriteService } from "@/modules/ai/rewrite-service";
+import type { Locale } from "@/i18n/ui";
 
 export class RewriteOrchestrator {
   constructor(
@@ -8,9 +9,9 @@ export class RewriteOrchestrator {
     private readonly rewriteService = new RewriteService(),
   ) {}
 
-  async rewriteById(articleId: string): Promise<{ model: string; moods: number }> {
+  async rewriteById(articleId: string, locale: Locale): Promise<{ model: string; moods: number; locale: Locale }> {
     const article = this.news.findById(articleId);
     if (!article) throw new NotFoundError("News article", articleId);
-    return this.rewriteService.rewriteArticle(article);
+    return this.rewriteService.rewriteArticle(article, locale);
   }
 }

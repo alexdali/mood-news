@@ -3,6 +3,7 @@ import type { Mood } from "@/domain/news/mood";
 import { NewsRepository } from "@/db/repositories/news-repository";
 import { RewriteRepository } from "@/db/repositories/rewrite-repository";
 import type { NewsCardView } from "@/modules/news/view-models";
+import type { Locale } from "@/i18n/ui";
 
 export class NewsQueryService {
   constructor(
@@ -10,11 +11,11 @@ export class NewsQueryService {
     private readonly rewrites = new RewriteRepository(),
   ) {}
 
-  list(input: { mood: Mood; limit?: number; offset?: number }): NewsCardView[] {
+  list(input: { mood: Mood; locale: Locale; limit?: number; offset?: number }): NewsCardView[] {
     const env = getEnv();
     const articles = this.news.list({ limit: input.limit ?? env.NEWS_PAGE_SIZE, offset: input.offset ?? 0 });
     return articles.map((article) => {
-      const result = this.rewrites.find(article.id, input.mood, env.AI_PROMPT_VERSION);
+      const result = this.rewrites.find(article.id, input.mood, input.locale, env.AI_PROMPT_VERSION);
       return {
         article,
         selectedMood: input.mood,

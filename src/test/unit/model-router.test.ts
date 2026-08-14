@@ -70,6 +70,7 @@ describe("application-level model routing", () => {
       articleId: "article_test",
       protectedText: currentProtectedText,
       original: { title: sourceTitle, summary: sourceSummary },
+      targetLocale: "en",
       systemPrompt: "system",
       userPrompt: "user",
     });
@@ -85,6 +86,7 @@ describe("application-level model routing", () => {
       articleId: "article_test",
       protectedText: currentProtectedText,
       original: { title: sourceTitle, summary: sourceSummary },
+      targetLocale: "en",
       systemPrompt: "system",
       userPrompt: "user",
     });

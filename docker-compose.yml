@@ -3,6 +3,8 @@ services:
     build: .
     env_file: .env
     environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
       DATABASE_PATH: /app/data/mood-news.db
     ports:
       - "3000:3000"
@@ -21,6 +23,7 @@ services:
     command: ["./node_modules/.bin/tsx", "scripts/worker.ts"]
     env_file: .env
     environment:
+      NODE_ENV: production
       DATABASE_PATH: /app/data/mood-news.db
     volumes:
       - mood_news_data:/app/data

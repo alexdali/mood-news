@@ -60,6 +60,7 @@ code {
   z-index: 50;
   box-shadow: 0 8px 28px rgba(20, 36, 30, 0.05);
 }
+.site-header--loading { min-height: 72px; }
 .brand { display: flex; align-items: center; gap: 11px; }
 .brand__mark {
   width: 44px; height: 44px; border-radius: 14px;
@@ -71,12 +72,23 @@ code {
 .brand strong { font-size: 0.97rem; letter-spacing: -0.01em; }
 .brand small { color: var(--ink-soft); font-size: 0.74rem; margin-top: 1px; }
 .main-nav { display: flex; align-items: center; gap: 4px; }
+.header-actions { display: flex; align-items: center; gap: 10px; }
 .main-nav a {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 9px 12px; border-radius: 11px;
   color: var(--ink-soft); font-size: 0.88rem; font-weight: 650;
 }
 .main-nav a:hover { color: var(--ink); background: var(--surface-muted); }
+.locale-switcher {
+  display: flex; gap: 2px; padding: 3px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--surface-muted);
+}
+.locale-switcher button {
+  min-width: 32px; padding: 6px 7px; border: 0; border-radius: 7px;
+  background: transparent; cursor: pointer; color: var(--ink-soft);
+  font-size: .7rem; font-weight: 850; letter-spacing: .06em;
+}
+.locale-switcher button[aria-pressed="true"] { background: var(--ink); color: white; }
 .site-footer {
   width: min(1240px, calc(100% - 40px));
   margin: 70px auto 0;
@@ -282,8 +294,11 @@ code {
 }
 @media (max-width: 760px) {
   .page-shell, .site-footer { width: min(100% - 24px, 1240px); }
-  .site-header { width: calc(100% - 16px); top: 6px; }
-  .brand small { display: none; }
+  .site-header { width: calc(100% - 16px); top: 6px; gap: 8px; padding-right: 9px; }
+  .brand > span:last-child { display: none; }
+  .brand__mark { width: 40px; height: 40px; border-radius: 12px; }
+  .header-actions { gap: 4px; min-width: 0; }
+  .main-nav { gap: 0; }
   .main-nav a { padding: 9px; font-size: 0; }
   .main-nav a svg { width: 19px; height: 19px; }
   .hero { min-height: 0; padding: 55px 0 30px; }

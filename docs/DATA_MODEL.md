@@ -47,7 +47,7 @@ Fact ledger текущей версии. Содержит точное знач�
 
 ## `rewrites`
 
-Один row на article, mood и prompt version. `status=stale` исключает output после изменения source content.
+Один row на article, mood, locale (`en|ru`) и prompt version. Уникальность `(article_id, mood, locale, prompt_version)` не даёт русской версии перезаписать английскую. `status=stale` исключает output после изменения source content.
 
 ## `validation_runs`
 
@@ -55,7 +55,7 @@ Fact ledger текущей версии. Содержит точное знач�
 
 ## `ai_runs`
 
-Каждая попытка primary/fallback. Стоимость берётся из provider response, если доступна.
+Каждая попытка primary/fallback с `locale`. Стоимость берётся из provider response, если доступна.
 
 ## `job_locks`
 

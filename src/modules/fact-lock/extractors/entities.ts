@@ -3,10 +3,10 @@ import type { FactExtractor } from "@/modules/fact-lock/extractors/base";
 import { normalizeFactValue } from "@/modules/fact-lock/extractors/base";
 import { ENTITY_STOP_WORDS, ORGANIZATION_SUFFIXES } from "@/modules/fact-lock/patterns";
 
-const ENTITY_WORD = String.raw`(?:[A-Z][\p{L}'’.-]+|[A-Z]{2,})`;
+const ENTITY_WORD = String.raw`(?:\p{Lu}[\p{L}'’.-]+|\p{Lu}{2,})`;
 const ENTITY_CONNECTOR = String.raw`(?:of|the|and|&)`;
 const ENTITY_PATTERN = new RegExp(
-  String.raw`\b${ENTITY_WORD}(?:\s+(?:${ENTITY_CONNECTOR}\s+)?${ENTITY_WORD}){0,4}\b`,
+  String.raw`(?<![\p{L}\p{N}_])${ENTITY_WORD}(?:\s+(?:${ENTITY_CONNECTOR}\s+)?${ENTITY_WORD}){0,4}(?![\p{L}\p{N}_])`,
   "gu",
 );
 
@@ -19,7 +19,7 @@ function classify(value: string): FactType {
   const words = value.split(/\s+/);
   if (words.some((word) => ORGANIZATION_SUFFIXES.has(word)) || /^[A-Z]{2,}$/.test(value)) return "organization";
   if (words.some((word) => KNOWN_PLACE_WORDS.has(word))) return "place";
-  if (words.length === 2 && words.every((word) => /^[A-Z][\p{L}'’.-]+$/u.test(word))) return "person";
+  if (words.length === 2 && words.every((word) => /^\p{Lu}[\p{L}'’.-]+$/u.test(word))) return "person";
   return "entity";
 }
 

@@ -20,6 +20,9 @@ paths:
           name: mood
           schema: { $ref: '#/components/schemas/Mood' }
         - in: query
+          name: lang
+          schema: { $ref: '#/components/schemas/Locale' }
+        - in: query
           name: limit
           schema: { type: integer, minimum: 1, maximum: 100, default: 24 }
         - in: query
@@ -38,6 +41,9 @@ paths:
         - in: query
           name: mood
           schema: { $ref: '#/components/schemas/Mood' }
+        - in: query
+          name: lang
+          schema: { $ref: '#/components/schemas/Locale' }
       responses:
         '200': { description: Article detail }
         '404': { description: Not found }
@@ -49,6 +55,9 @@ paths:
           name: id
           required: true
           schema: { type: string }
+        - in: query
+          name: lang
+          schema: { $ref: '#/components/schemas/Locale' }
       responses:
         '200': { description: Generated or returned from cache }
         '404': { description: Not found }
@@ -106,3 +115,7 @@ components:
     Mood:
       type: string
       enum: [neutral, hopeful, concerned, ironic]
+    Locale:
+      type: string
+      enum: [en, ru]
+      default: en

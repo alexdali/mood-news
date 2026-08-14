@@ -1,5 +1,6 @@
 import { moodDefinitions } from "@/config/moods";
 import type { ProtectedArticleText } from "@/domain/fact-lock/fact";
+import type { Locale } from "@/i18n/ui";
 
 export const REWRITE_SYSTEM_PROMPT = `You are a careful news copy editor.
 
@@ -21,12 +22,20 @@ export function buildRewriteUserPrompt(input: {
   protectedText: ProtectedArticleText;
   sourceName: string;
   publishedAt: string;
+  targetLocale: Locale;
 }): string {
   const moodInstructions = moodDefinitions
     .map((mood) => `- ${mood.id}: ${mood.promptInstruction}`)
     .join("\n");
 
-  return `Rewrite the protected source into exactly four variants.
+  const targetLanguage = input.targetLocale === "ru" ? "Russian" : "English";
+
+  return `Rewrite the protected source into exactly four variants in ${targetLanguage}.
+
+Language rules:
+- Write all non-placeholder prose in ${targetLanguage}.
+- Keep every placeholder byte-for-byte unchanged. The restored names, dates, numbers and quotations may remain in the source language because factual fidelity wins.
+- Do not transliterate, translate or inflect text inside placeholders.
 
 Source metadata is context only and must not be copied unless already present in placeholders:
 - source: ${input.sourceName}

@@ -1,169 +1,138 @@
-# Отчёт о проверке стартового репозитория
+# Отчёт о выполненных проверках
 
-Дата проверки: 2026-08-14.
+Дата последней проверки: 2026-08-15.
 
-Этот файл разделяет **фактически выполненные проверки** и команды, которые необходимо повторить после установки npm-зависимостей на машине с доступом к реестру.
+Отчёт описывает фактическое состояние реализованного репозитория. Секреты из локального `.env` не выводились и в Git не добавлялись.
 
-## Выполнено в текущем окружении
+## Итог
 
-### 1. Архитектурные инварианты
+| Проверка | Результат |
+|---|---|
+| `npm install` | PASS: lockfile создан, 461 package, 0 vulnerabilities |
+| `npm run check` | PASS |
+| Unit/integration | PASS: 48/48 |
+| `npm run build` | PASS |
+| Existing SQLite migration | PASS: `0004_rewrite_locales.sql` применена поверх рабочей базы |
+| Docker image build | PASS |
+| Docker Compose health | PASS: web healthy, worker running |
+| Реальный BBC import | PASS: последний cycle 133 fetched, 0 errors; 115 active records в проверенном volume |
+| Playwright desktop/mobile | PASS: 12/12 |
+| RU/EN UI и URL state | PASS |
+| AI locale persistence | PASS: EN и RU batches сосуществуют, 8 rows на статью в integration test |
+| Live AI generation | NOT RUN: `OPENROUTER_API_KEY` в локальной среде не задан |
 
-Команда:
-
-```bash
-node scripts/check-architecture.mjs
-```
-
-Проверяет:
-
-- наличие обязательных файлов и SQL migrations;
-- отсутствие server-only импортов в client components;
-- отсутствие `dangerouslySetInnerHTML`;
-- актуальные model IDs;
-- пятиминутный ingestion interval и отдельный rewrite interval;
-- наличие application-level DeepSeek → Luna fallback;
-- наличие динамической lock policy и независимого scheduler;
-- отсутствие очевидно захардкоженных API keys;
-- локальные Markdown-ссылки;
-- обязательные package scripts и test scaffolds.
-
-Результат: **пройдено**.
-
-```text
-159 TypeScript/JavaScript source files scanned
-36 Markdown files checked for local links
-3 SQL migration files found
-```
-
-### 2. Разрешение локальных импортов
+## Полный quality gate
 
 Команда:
 
 ```bash
-node scripts/check-local-imports.mjs
+npm run check
 ```
 
-Проверяет статические локальные импорты `@/…` и `./…` для TypeScript, JavaScript, JSON и CSS.
-
-Результат: **пройдено: 389 импортов разрешены, неразрешённых локальных импортов нет**.
-
-### 3. Синтаксис TypeScript/TSX
-
-Команда после установки зависимостей:
-
-```bash
-node scripts/check-syntax.mjs
-```
-
-В текущем окружении этот же скрипт запущен с глобально установленным TypeScript parser API.
-
-Результат: **пройдено: 153 `.ts`/`.tsx` файла разобраны без синтаксических diagnostics**.
-
-### 4. Приближённая проверка внутреннего type graph
-
-Дополнительно выполнен `tsc --noEmit` с временными декларациями только для внешних npm-модулей. Это проверяет внутренние связи типов, strict nullability и локальные сигнатуры, но **не заменяет** настоящий typecheck с реальными типами Next.js, React, Zod, Vitest и остальных зависимостей.
-
-Результат: **пройдено без diagnostics**.
-
-### 5. SQLite migrations
-
-Все SQL-файлы применены по порядку к чистой временной SQLite-базе:
+Фактический результат:
 
 ```text
-0001_initial.sql
-0002_indexes.sql
-0003_article_snapshots.sql
+Architecture check: 162 TypeScript/JavaScript files, 36 Markdown files, 5 migrations
+Local imports: 442 resolved
+Syntax: 156 TypeScript files parsed
+TypeScript: PASS
+ESLint: PASS
+Vitest: 16 files passed, 48 tests passed
+```
+
+Проверки включают Fact Lock, fallback routing, Unicode/Cyrillic entities, отклонение результата на неверном языке, idempotent ingestion, snapshots, job locks и независимое хранение `en`/`ru` rewrites.
+
+## Production build и migrations
+
+`npm run build` прошёл для Next.js 16.3.1. Все dynamic/static routes собраны. Тот же build прошёл внутри multi-stage Dockerfile через воспроизводимый `npm ci`.
+
+Миграция `0004_rewrite_locales.sql` проверена двумя путями:
+
+1. на чистых in-memory базах во всех integration tests;
+2. поверх ранее существующей локальной базы с migrations `0001`–`0003`.
+
+Старые rewrites переносятся как `locale='en'`; validation history сохраняется. Новая уникальность — `(article_id, mood, locale, prompt_version)`.
+
+## Docker/VPS-equivalent smoke
+
+Команда:
+
+```bash
+docker compose up -d --build
 ```
 
 Проверено:
 
-- создано 11 прикладных таблиц;
-- существует `news_articles.version`;
-- существует внешний ключ `article_snapshots.article_id → news_articles.id`;
-- `PRAGMA foreign_key_check` не возвращает ошибок.
+- `web` слушает `0.0.0.0:3000` и проходит healthcheck;
+- `worker` использует общий persistent SQLite volume;
+- повторный BBC poll корректно обработал 131 unchanged, 1 new и 1 changed record;
+- без OpenRouter key rewrite runner отключается явно, ingestion продолжает работать;
+- `/api/health` сообщает `database=connected` и не раскрывает секреты;
+- `/api/news?mood=neutral&lang=ru` возвращает `locale=ru`;
+- source URLs очищены от BBC tracking-параметров.
 
-Результат: **пройдено**.
+## Browser acceptance
 
-### 6. JSON и YAML
-
-Успешно разобраны:
-
-- `package.json`;
-- `tsconfig.json`;
-- `.prettierrc.json`;
-- `docker-compose.yml`;
-- `docs/openapi.yaml`;
-- `.github/workflows/ci.yml`;
-- `.github/workflows/e2e.yml`.
-
-Результат: **пройдено**.
-
-### 7. Конфигурация DeepSeek → Luna
-
-Статически проверено:
-
-- primary: `deepseek/deepseek-v4-flash-0731`;
-- fallback: `openai/gpt-5.6-luna`;
-- reasoning по умолчанию явно выключен;
-- запрос использует strict JSON Schema;
-- provider routing требует поддержку переданных параметров;
-- fallback выполняется после API-, parse- и Fact Lock-ошибок;
-- Luna проходит тот же deterministic gate;
-- model, role, tokens, reasoning tokens, latency, cost и ошибки сохраняются в `ai_runs`;
-- длинный AI batch не задерживает пятиминутный source poll.
-
-Live-вызовы моделей не выполнялись: в поставляемом архиве нет пользовательского OpenRouter API key.
-
-## Что не удалось честно выполнить в песочнице
-
-В контейнере не было рабочего DNS-доступа к npm registry. Попытка создать lock-файл через registry завершилась по timeout. Поэтому в этом окружении **не были фактически выполнены**:
-
-```bash
-npm install
-npm run typecheck
-npm run lint
-npm test
-npm run build
-npm run test:e2e
-```
-
-Это ограничение среды, а не утверждение об успешности этих команд. В архив намеренно не добавлен фиктивный `package-lock.json`.
-
-## Обязательная проверка на локальной машине
-
-После распаковки:
-
-```bash
-cp .env.example .env
-npm install
-npm run check
-npm run build
-```
-
-После первого успешного `npm install` нужно закоммитить созданный `package-lock.json`, затем заменить `npm install` на `npm ci` в CI и Dockerfile для полностью воспроизводимой установки.
-
-Проверка реальных OpenRouter capabilities:
-
-```bash
-npm run verify:models
-```
-
-Проверка качества моделей на одном наборе реальных новостей:
-
-```bash
-npm run ingest
-npm run evaluate:ai -- --limit=10
-```
-
-## Критерий готовности перед сдачей
-
-Репозиторий можно считать готовым к демонстрации после одновременного выполнения:
+Playwright запущен в проектах Desktop Chrome и Pixel 7:
 
 ```text
-npm run check          PASS
-npm run build          PASS
-npm run smoke          PASS при запущенном web
-минимум 10 real-source articles в БД
-минимум 4 validated moods для демонстрационной статьи
-скриншоты grid / comparison / Fact Lock / ops
+12 passed
 ```
+
+Покрыто:
+
+- grid и mood controls;
+- health endpoint;
+- mood state в URL;
+- переключение `RU / EN` с сохранением mood;
+- `html[lang]`;
+- русские UI labels;
+- отсутствие горизонтального overflow;
+- реальная detail page, comparison и Fact Lock preview;
+- locale-aware back link.
+
+Дополнительная ручная проверка in-app browser подтвердила:
+
+- 24 карточки на русской главной;
+- активные `RU` и `Тревожно`/`С надеждой` состояния;
+- 7 защищённых occurrences на проверенной detail page;
+- 0 px overflow на desktop и mobile;
+- локализованные `/ops` и `/about`.
+
+Скриншоты лежат в `docs/screenshots/`.
+
+## AI: проверено и не проверено
+
+Через официальный OpenRouter models endpoint подтверждено наличие настроенных model IDs:
+
+```text
+deepseek/deepseek-v4-flash-0731
+openai/gpt-5.6-luna
+```
+
+Статически и тестами подтверждено:
+
+- target locale входит в prompt и validator;
+- один вызов возвращает четыре moods на одном языке;
+- primary и fallback проходят одинаковый Fact Lock;
+- неверный язык отклоняется;
+- английские и русские results не перезаписывают друг друга;
+- worker обрабатывает `AI_REWRITE_LOCALES=en,ru`;
+- original всегда остаётся доступен при fail-closed поведении.
+
+Live AI-запрос не выполнялся, потому что ключ отсутствует. Поэтому `0 validated rewrites` в приложенных ops evidence — честное текущее состояние, а не успешный AI benchmark. Для завершения live acceptance владелец должен локально добавить `OPENROUTER_API_KEY` в `.env` и выполнить:
+
+```bash
+npm run rewrite -- --limit=3
+npm run evaluate:ai -- --limit=3
+```
+
+Ключ не нужно передавать в чат или коммитить.
+
+## Артефакты
+
+- `docs/screenshots/01-home-grid-ru-desktop.png`
+- `docs/screenshots/02-article-fact-lock-ru.png`
+- `docs/screenshots/03-operations-ru.png`
+- `docs/screenshots/04-method-ru.png`
+- `docs/screenshots/05-home-grid-ru-mobile.png`

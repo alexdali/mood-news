@@ -1,5 +1,16 @@
+"use client";
+
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { getLocale, uiCopy, withLocale } from "@/i18n/ui";
+import { Suspense } from "react";
 
 export default function NotFound() {
-  return <section className="error-state"><h1>Not found</h1><p>The requested news record does not exist.</p><Link className="button" href="/">Back to grid</Link></section>;
+  return <Suspense fallback={null}><NotFoundContent /></Suspense>;
+}
+
+function NotFoundContent() {
+  const locale = getLocale(useSearchParams().get("lang"));
+  const copy = uiCopy[locale].states;
+  return <section className="error-state"><h1>{copy.notFound}</h1><p>{copy.notFoundBody}</p><Link className="button" href={withLocale("/", locale)}>{copy.back}</Link></section>;
 }

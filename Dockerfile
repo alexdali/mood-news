@@ -6,13 +6,13 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 FROM base AS deps
-COPY package.json ./
-RUN npm install --no-audit --no-fund
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN CRON_SECRET=container-build-only-secret npm run build
 
 FROM node:22-bookworm-slim AS runner
 WORKDIR /app
