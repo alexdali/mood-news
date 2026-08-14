@@ -1,0 +1,20 @@
+export type NewsArticle = {
+  id: string;
+  sourceId: string;
+  sourceName: string;
+  sourceItemId: string;
+  canonicalUrl: string;
+  title: string;
+  summary: string;
+  section: string | null;
+  language: string;
+  imageUrl: string | null;
+  byline: string | null;
+  publishedAt: string;
+  fetchedAt: string;
+  contentHash: string;
+  version: number;
+  status: "active" | "stale" | "hidden";
+  createdAt: string;
+  updatedAt: string;
+};

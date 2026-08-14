@@ -1,0 +1,79 @@
+import { getEnv } from "@/config/env";
+import { moods } from "@/domain/news/mood";
+import type { NewsArticle } from "@/domain/news/article";
+import { BudgetExceededError } from "@/core/errors";
+import { FactRepository } from "@/db/repositories/fact-repository";
+import { RewriteRepository } from "@/db/repositories/rewrite-repository";
+import { AiRunRepository } from "@/db/repositories/ai-run-repository";
+import { EventRepository } from "@/db/repositories/event-repository";
+import { protectArticleText } from "@/modules/fact-lock/placeholder";
+import { restoreArticleFields } from "@/modules/fact-lock/restore";
+import { REWRITE_SYSTEM_PROMPT, buildRewriteUserPrompt } from "@/modules/ai/prompts";
+import { ModelRouter } from "@/modules/ai/model-router";
+
+export class RewriteService {
+  constructor(
+    private readonly modelRouter = new ModelRouter(),
+    private readonly facts = new FactRepository(),
+    private readonly rewrites = new RewriteRepository(),
+    private readonly aiRuns = new AiRunRepository(),
+    private readonly events = new EventRepository(),
+  ) {}
+
+  async rewriteArticle(article: NewsArticle): Promise<{ model: string; moods: number }> {
+    const env = getEnv();
+    const existing = this.rewrites.listForArticle(article.id, env.AI_PROMPT_VERSION);
+    if (existing.length === moods.length) {
+      return { model: existing[0]?.model ?? "cached", moods: existing.length };
+    }
+
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const spent = this.aiRuns.costSince(today.toISOString());
+    if (env.MAX_DAILY_AI_COST_USD > 0 && spent >= env.MAX_DAILY_AI_COST_USD) {
+      this.aiRuns.record({
+        articleId: article.id,
+        model: env.AI_PRIMARY_MODEL,
+        modelRole: "primary",
+        status: "budget_blocked",
+        latencyMs: 0,
+        errorCode: "AI_BUDGET_EXCEEDED",
+        errorMessage: `Spent $${spent.toFixed(4)} of $${env.MAX_DAILY_AI_COST_USD.toFixed(2)}`,
+      });
+      throw new BudgetExceededError(env.MAX_DAILY_AI_COST_USD, spent);
+    }
+
+    const protectedText = protectArticleText(article.id, article.title, article.summary);
+    this.facts.replaceForArticle(article.id, protectedText.facts);
+
+    const result = await this.modelRouter.generate({
+      articleId: article.id,
+      protectedText,
+      original: { title: article.title, summary: article.summary },
+      systemPrompt: REWRITE_SYSTEM_PROMPT,
+      userPrompt: buildRewriteUserPrompt({
+        protectedText,
+        sourceName: article.sourceName,
+        publishedAt: article.publishedAt,
+      }),
+    });
+
+    const restoredVariants = result.payload.variants.map((variant) => ({
+      mood: variant.mood,
+      ...restoreArticleFields({ title: variant.title, summary: variant.summary, facts: protectedText.facts }),
+    }));
+    this.rewrites.saveValidatedBatch({
+      articleId: article.id,
+      model: result.model,
+      promptVersion: env.AI_PROMPT_VERSION,
+      variants: restoredVariants,
+      validations: result.validations,
+    });
+    this.events.record("rewrite.validated", {
+      entityType: "news_article",
+      entityId: article.id,
+      payload: { model: result.model, promptVersion: env.AI_PROMPT_VERSION, moods: moods.length },
+    });
+    return { model: result.model, moods: moods.length };
+  }
+}

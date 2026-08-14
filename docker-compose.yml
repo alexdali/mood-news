@@ -1,0 +1,35 @@
+services:
+  web:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_PATH: /app/data/mood-news.db
+    ports:
+      - "3000:3000"
+    volumes:
+      - mood_news_data:/app/data
+      - mood_news_reports:/app/reports
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build: .
+    command: ["./node_modules/.bin/tsx", "scripts/worker.ts"]
+    env_file: .env
+    environment:
+      DATABASE_PATH: /app/data/mood-news.db
+    volumes:
+      - mood_news_data:/app/data
+      - mood_news_reports:/app/reports
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  mood_news_data:
+  mood_news_reports:

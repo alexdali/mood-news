@@ -1,0 +1,23 @@
+name: Bug report
+description: Report a reproducible problem
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model route / prompt version
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs, request ID, validation codes

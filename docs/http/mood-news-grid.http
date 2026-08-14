@@ -1,0 +1,26 @@
+@baseUrl = http://localhost:3000
+@cronSecret = development-only-secret-change-me
+@articleId = replace-me
+
+### Health
+GET {{baseUrl}}/api/health
+
+### News grid
+GET {{baseUrl}}/api/news?mood=hopeful&limit=10
+
+### Article detail
+GET {{baseUrl}}/api/news/{{articleId}}?mood=concerned
+
+### Manual rewrite
+POST {{baseUrl}}/api/news/{{articleId}}/rewrite
+
+### Ops
+GET {{baseUrl}}/api/ops/summary
+
+### Ingest job
+POST {{baseUrl}}/api/jobs/ingest
+Authorization: Bearer {{cronSecret}}
+
+### Rewrite job
+POST {{baseUrl}}/api/jobs/rewrite-pending?limit=10
+Authorization: Bearer {{cronSecret}}
