@@ -2,6 +2,7 @@
   "name": "mood-news-grid",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "Real news rewritten into selectable emotional modes with deterministic fact preservation.",
   "license": "MIT",
   "engines": {
@@ -64,7 +65,7 @@
     "@types/react-dom": "19.2.4",
     "@types/sanitize-html": "2.16.1",
     "@vitest/ui": "4.1.10",
-    "eslint": "10.8.1",
+    "eslint": "9.39.5",
     "eslint-config-next": "16.3.1",
     "tsx": "4.23.12",
     "typescript": "5.9.3",

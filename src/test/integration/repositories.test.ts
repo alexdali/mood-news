@@ -5,6 +5,7 @@ import { SourceRepository } from "@/db/repositories/source-repository";
 import { NewsRepository } from "@/db/repositories/news-repository";
 import { JobLockRepository } from "@/db/repositories/job-lock-repository";
 import { SnapshotRepository } from "@/db/repositories/snapshot-repository";
+import { AiRunRepository } from "@/db/repositories/ai-run-repository";
 
 let db: SqliteDatabase | undefined;
 afterEach(() => db?.close());
@@ -88,5 +89,15 @@ describe("SQLite repositories", () => {
     expect(locks.acquire("ingest", "worker-b", 60_000)).toBe(false);
     locks.release("ingest", "worker-a");
     expect(locks.acquire("ingest", "worker-b", 60_000)).toBe(true);
+  });
+
+  it("returns numeric zeroes for empty AI metrics", () => {
+    db = createDatabase(":memory:");
+    expect(new AiRunRepository(db).summaryLast24Hours()).toEqual({
+      requests: 0,
+      failures: 0,
+      costUsd: 0,
+      averageLatencyMs: 0,
+    });
   });
 });

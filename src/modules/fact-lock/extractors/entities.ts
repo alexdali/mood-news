@@ -3,7 +3,12 @@ import type { FactExtractor } from "@/modules/fact-lock/extractors/base";
 import { normalizeFactValue } from "@/modules/fact-lock/extractors/base";
 import { ENTITY_STOP_WORDS, ORGANIZATION_SUFFIXES } from "@/modules/fact-lock/patterns";
 
-const ENTITY_PATTERN = /\b(?:[A-Z][\p{L}'’.-]+|[A-Z]{2,})(?:\s+(?:[A-Z][\p{L}'’.-]+|[A-Z]{2,}|of|the|and|&)){0,4}\b/gu;
+const ENTITY_WORD = String.raw`(?:[A-Z][\p{L}'’.-]+|[A-Z]{2,})`;
+const ENTITY_CONNECTOR = String.raw`(?:of|the|and|&)`;
+const ENTITY_PATTERN = new RegExp(
+  String.raw`\b${ENTITY_WORD}(?:\s+(?:${ENTITY_CONNECTOR}\s+)?${ENTITY_WORD}){0,4}\b`,
+  "gu",
+);
 
 const KNOWN_PLACE_WORDS = new Set([
   "Africa", "America", "Asia", "Australia", "Britain", "China", "Europe", "France", "Germany",

@@ -34,6 +34,9 @@ const failures = [];
 let checked = 0;
 
 for (const file of files) {
+  // Next.js owns this generated declaration and may reference files under
+  // .next before a clean checkout has produced them.
+  if (path.basename(file) === "next-env.d.ts") continue;
   const source = fs.readFileSync(file, "utf8");
   for (const match of source.matchAll(importPattern)) {
     const specifier = match[1];

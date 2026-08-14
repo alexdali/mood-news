@@ -15,7 +15,7 @@ export function canonicalizeUrl(rawUrl: string): string {
   for (const key of [...url.searchParams.keys()]) {
     if (TRACKING_PARAMS.has(key.toLowerCase())) url.searchParams.delete(key);
   }
-  url.pathname = url.pathname.replace(/\/{2,}/g, "/").replace(/\/$/, "") || "/";
+  url.pathname = url.pathname.replace(/\/{2,}/g, "/") || "/";
   return url.toString();
 }
 

@@ -60,7 +60,7 @@ export class AiRunRepository {
     const row = this.db.prepare(`
       SELECT
         COUNT(*) AS requests,
-        SUM(CASE WHEN status != 'completed' THEN 1 ELSE 0 END) AS failures,
+        COALESCE(SUM(CASE WHEN status != 'completed' THEN 1 ELSE 0 END), 0) AS failures,
         COALESCE(SUM(cost_usd), 0) AS cost,
         COALESCE(AVG(latency_ms), 0) AS avg_latency
       FROM ai_runs
