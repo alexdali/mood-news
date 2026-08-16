@@ -77,7 +77,8 @@ export const uiCopy = {
       table: "Protected facts",
       placeholder: "Placeholder",
       type: "Type",
-      value: "Exact source value",
+      value: "Localized fact value",
+      sourceValue: "Source",
       field: "Field",
       fields: { title: "title", summary: "summary" },
       types: {
@@ -214,7 +215,8 @@ export const uiCopy = {
       table: "Защищённые факты",
       placeholder: "Placeholder",
       type: "Тип",
-      value: "Точное значение из источника",
+      value: "Значение для выбранного языка",
+      sourceValue: "Источник",
       field: "Поле",
       fields: { title: "заголовок", summary: "описание" },
       types: {

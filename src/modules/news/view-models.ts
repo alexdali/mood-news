@@ -1,7 +1,7 @@
 import type { Mood } from "@/domain/news/mood";
 import type { NewsArticle } from "@/domain/news/article";
 import type { NewsRewrite } from "@/domain/news/rewrite";
-import type { ProtectedFact } from "@/domain/fact-lock/fact";
+import type { LocalizedProtectedFact } from "@/domain/fact-lock/fact";
 import type { FactValidationResult } from "@/domain/fact-lock/validation";
 
 export type NewsCardView = {
@@ -14,6 +14,6 @@ export type NewsCardView = {
 };
 
 export type NewsDetailView = NewsCardView & {
-  facts: ProtectedFact[];
+  facts: LocalizedProtectedFact[];
   availableMoods: Mood[];
 };

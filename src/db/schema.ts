@@ -45,6 +45,13 @@ export type ProtectedFactRow = {
   created_at: string;
 };
 
+export type LocalizedProtectedFactRow = ProtectedFactRow & {
+  locale: "en" | "ru";
+  localized_value: string | null;
+  localized_normalized_value: string | null;
+  localization_model: string | null;
+};
+
 export type RewriteRow = {
   id: string;
   article_id: string;

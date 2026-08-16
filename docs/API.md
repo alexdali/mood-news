@@ -38,7 +38,7 @@ Response содержит original, selected display text, source, rewrite metad
 
 Query: `mood`, `lang=en|ru`.
 
-Дополнительно возвращает fact ledger и available moods.
+Дополнительно возвращает available moods и fact ledger выбранного языка. У каждого факта есть локализованное `value`, исходное `sourceValue`, `locale` и `localizationModel`; при отсутствии AI-версии API безопасно возвращает source value.
 
 ## `POST /api/news/:id/rewrite`
 

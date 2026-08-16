@@ -106,19 +106,21 @@ Worker запускает импорт сразу после старта и з�
 article title + summary
 → извлечение имён, чисел, дат, мест, денег, URL и цитат
 → замена фактов на field-specific placeholders
-→ DeepSeek: четыре mood-варианта для выбранного языка
+→ DeepSeek через OpenRouter: языковая версия fact ledger + четыре mood-варианта
 → strict JSON Schema + Zod
-→ Fact Lock validation
+→ проверка локализованных фактов + Fact Lock validation
 → при ошибке тот же процесс через Luna
-→ восстановление точных source values
+→ восстановление проверенных fact values выбранного языка
 → сохранение validated batch
 ```
 
-Для `en` и `ru` создаются отдельные batches. Они хранятся независимо по ключу `(article_id, mood, locale, prompt_version)`, поэтому русская версия не перезаписывает английскую. Worker обрабатывает языки поочерёдно, чтобы один locale не блокировал другой.
+Для `en` и `ru` создаются отдельные batches. Они хранятся независимо по ключу `(article_id, mood, locale, prompt_version)`, поэтому русская версия не перезаписывает английскую. Для каждого canonical fact отдельно хранится проверенное значение языка: английский ledger совпадает с источником, русский переводит или транслитерирует имена, места, организации, даты и цитаты. URL, числа, деньги, проценты и время остаются точными. Worker обрабатывает языки поочерёдно, чтобы один locale не блокировал другой.
 
 Fact Lock проверяет:
 
 - наличие каждого ожидаемого placeholder ровно один раз;
+- полный состав и порядок locale-specific fact ledger;
+- неизменность всех цифр и exact-типов при переводе фактов;
 - сохранение поля и порядка защищённых фактов;
 - отсутствие неизвестных placeholders;
 - отсутствие новых чисел, дат, денег, процентов, цитат, URL и именованных сущностей;
@@ -149,6 +151,7 @@ Web и worker работают независимо. Межпроцессные 
 | `ingestion_runs` | Результаты общих циклов импорта |
 | `ingestion_source_runs` | Результаты импорта по каждому источнику |
 | `protected_facts` | Fact Lock ledger и placeholders |
+| `protected_fact_localizations` | Проверенное значение каждого факта для `en` и `ru`, модель и связь с source value |
 | `rewrites` | Проверенные mood-версии с `locale` и prompt version |
 | `validation_runs` | Verdict и детали каждой проверки |
 | `ai_runs` | Модель, locale, tokens, latency, cost и ошибки |
@@ -171,13 +174,13 @@ AI вызывается через OpenRouter:
 AI_PRIMARY_MODEL=deepseek/deepseek-v4-flash-0731
 AI_FALLBACK_MODEL=openai/gpt-5.6-luna
 AI_REWRITE_LOCALES=en,ru
-AI_PROMPT_VERSION=mood-v1
+AI_PROMPT_VERSION=mood-v2-localized-facts
 ```
 
-- DeepSeek создаёт четыре эмоциональных варианта одним structured-output запросом для конкретного языка.
+- DeepSeek одним structured-output запросом создаёт языковую версию fact ledger и четыре эмоциональных варианта; отдельный переводчик не используется.
 - GPT-5.6 Luna используется как application-level fallback после provider-, parse-, schema- или Fact Lock-ошибки.
 - Обе модели проходят одинаковую детерминированную проверку; fallback не получает дополнительных прав на публикацию.
-- Модель работает с защищённым placeholder-текстом, а точные факты восстанавливает код после успешной проверки.
+- Модель работает с защищённым placeholder-текстом; код отдельно проверяет перевод каждого факта, цифры и exact-типы, а затем восстанавливает только принятые значения выбранного языка.
 - В `ai_runs` записываются model role, locale, tokens, reasoning tokens, latency, provider request ID, cost и ошибки.
 - `MAX_DAILY_AI_COST_USD` ограничивает дневные расходы.
 - При пустом `OPENROUTER_API_KEY` AI runner отключается, но импорт и отображение original продолжают работать.

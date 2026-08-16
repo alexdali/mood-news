@@ -11,6 +11,7 @@ import { FactRepository } from "@/db/repositories/fact-repository";
 import { NewsDetailService } from "@/modules/news/news-detail-service";
 import type { FactValidationResult } from "@/domain/fact-lock/validation";
 import { moods } from "@/domain/news/mood";
+import { protectArticleText } from "@/modules/fact-lock/placeholder";
 
 let db: SqliteDatabase | undefined;
 afterEach(() => db?.close());
@@ -156,5 +157,46 @@ describe("SQLite repositories", () => {
     expect(rewrites.find(inserted.articleId, "neutral", "en", "v1")?.rewrite.title).toBe("English neutral");
     expect(rewrites.find(inserted.articleId, "neutral", "ru", "v1")?.rewrite.title).toBe("Русский neutral");
     expect(rewrites.countValidated("v1")).toBe(8);
+  });
+
+  it("stores separate localized values for each canonical fact", () => {
+    db = createDatabase(":memory:");
+    new SourceRepository(db).upsert({ id: "source", kind: "rss", name: "Source", baseUrl: "https://example.com/rss", enabled: true });
+    const news = new NewsRepository(db);
+    const inserted = news.upsert({
+      sourceId: "source", sourceItemId: "facts-1", canonicalUrl: "https://example.com/facts",
+      title: "Russia reports 24 flights", summary: "Moscow published the result.",
+      section: null, language: "en", imageUrl: null, byline: null,
+      publishedAt: "2026-08-14T10:00:00Z", fetchedAt: "2026-08-14T10:01:00Z",
+      contentHash: "facts-hash", rawPayload: {},
+    });
+    const repository = new FactRepository(db);
+    const extracted = protectArticleText(inserted.articleId, "Russia reports 24 flights", "Moscow published the result.");
+    const canonical = repository.replaceForArticle(inserted.articleId, extracted.facts);
+    repository.saveLocalizations(inserted.articleId, "en", canonical, "source");
+    repository.saveLocalizations(inserted.articleId, "ru", canonical.map((fact) => ({
+      ...fact,
+      value: fact.value === "Russia" ? "Россия" : fact.value === "Moscow" ? "Москва" : fact.value,
+      normalizedValue: fact.value === "Russia" ? "россия" : fact.value === "Moscow" ? "москва" : fact.normalizedValue,
+    })), "translator");
+
+    expect(repository.listLocalizedForArticle(inserted.articleId, "en").map((fact) => fact.value))
+      .toEqual(expect.arrayContaining(["Russia", "Moscow", "24"]));
+    const russian = repository.listLocalizedForArticle(inserted.articleId, "ru");
+    expect(russian.map((fact) => fact.value)).toEqual(expect.arrayContaining(["Россия", "Москва", "24"]));
+    expect(russian.find((fact) => fact.value === "Россия")?.sourceValue).toBe("Russia");
+    expect(russian.find((fact) => fact.value === "Россия")?.localizationModel).toBe("translator");
+
+    const idsBeforeSync = new Map(canonical.map((fact) => [fact.placeholder, fact.id]));
+    const resynced = repository.replaceForArticle(inserted.articleId, extracted.facts);
+    expect(resynced.map((fact) => fact.sourceField)).toEqual([
+      ...resynced.filter((fact) => fact.sourceField === "title").map(() => "title" as const),
+      ...resynced.filter((fact) => fact.sourceField === "summary").map(() => "summary" as const),
+    ]);
+    expect(resynced.every((fact) => idsBeforeSync.get(fact.placeholder) === fact.id)).toBe(true);
+    expect(repository.listLocalizedForArticle(inserted.articleId, "en").map((fact) => fact.value))
+      .toEqual(expect.arrayContaining(["Russia", "Moscow", "24"]));
+    expect(repository.listLocalizedForArticle(inserted.articleId, "ru").map((fact) => fact.value))
+      .toEqual(expect.arrayContaining(["Россия", "Москва", "24"]));
   });
 });

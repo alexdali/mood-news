@@ -7,7 +7,13 @@ const variantSchema = z.object({
   summary: z.string().min(1).max(4_000),
 });
 
+const localizedFactSchema = z.object({
+  placeholder: z.string().regex(/^\[\[FACT_\d{3}\]\]$/),
+  value: z.string().min(1).max(4_000),
+});
+
 export const rewritePayloadSchema = z.object({
+  localizedFacts: z.array(localizedFactSchema).max(100),
   variants: z.array(variantSchema).length(moods.length).superRefine((variants, ctx) => {
     const received = new Set(variants.map((variant) => variant.mood));
     for (const mood of moods) {
@@ -25,6 +31,19 @@ export const rewriteResponseJsonSchema = {
     type: "object",
     additionalProperties: false,
     properties: {
+      localizedFacts: {
+        type: "array",
+        maxItems: 100,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            placeholder: { type: "string", pattern: "^\\[\\[FACT_[0-9]{3}\\]\\]$" },
+            value: { type: "string", minLength: 1, maxLength: 4_000 },
+          },
+          required: ["placeholder", "value"],
+        },
+      },
       variants: {
         type: "array",
         minItems: moods.length,
@@ -41,6 +60,6 @@ export const rewriteResponseJsonSchema = {
         },
       },
     },
-    required: ["variants"],
+    required: ["localizedFacts", "variants"],
   },
 } as const;

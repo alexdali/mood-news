@@ -21,10 +21,16 @@ export class NewsDetailService {
     if (!article) throw new NotFoundError("News article", articleId);
     const selected = this.rewrites.find(articleId, mood, locale, env.AI_PROMPT_VERSION);
     const available = this.rewrites.listForArticle(articleId, locale, env.AI_PROMPT_VERSION).map((rewrite) => rewrite.mood);
-    const persistedFacts = this.facts.listForArticle(articleId);
+    const persistedFacts = this.facts.listLocalizedForArticle(articleId, locale);
     const facts = persistedFacts.length > 0
       ? persistedFacts
-      : protectArticleText(article.id, article.title, article.summary).facts;
+      : protectArticleText(article.id, article.title, article.summary).facts.map((fact) => ({
+        ...fact,
+        locale,
+        sourceValue: fact.value,
+        sourceNormalizedValue: fact.normalizedValue,
+        localizationModel: "source-preview",
+      }));
     return {
       article,
       selectedMood: mood,

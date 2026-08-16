@@ -1,6 +1,7 @@
 import type { Mood } from "@/domain/news/mood";
 import type { FactValidationResult } from "@/domain/fact-lock/validation";
 import type { AiUsage } from "@/domain/ai/run";
+import type { LocalizedFactCandidate, ProtectedFact } from "@/domain/fact-lock/fact";
 
 export type AiRewriteVariant = {
   mood: Mood;
@@ -9,6 +10,7 @@ export type AiRewriteVariant = {
 };
 
 export type AiRewritePayload = {
+  localizedFacts: LocalizedFactCandidate[];
   variants: AiRewriteVariant[];
 };
 
@@ -47,5 +49,6 @@ export type ModelCallResult = {
 };
 
 export type ValidatedModelResult = ModelCallResult & {
+  localizedFacts: ProtectedFact[];
   validations: Map<Mood, FactValidationResult>;
 };

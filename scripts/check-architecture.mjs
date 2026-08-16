@@ -35,6 +35,7 @@ const requiredFiles = [
   "migrations/0003_article_snapshots.sql",
   "migrations/0004_rewrite_locales.sql",
   "migrations/0005_ai_run_locale.sql",
+  "migrations/0006_fact_localizations.sql",
   "src/i18n/ui.ts",
   "src/modules/ingestion/ingest-service.ts",
   "src/modules/fact-lock/validator.ts",

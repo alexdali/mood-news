@@ -38,3 +38,15 @@ export type ProtectedArticleText = {
   summary: string;
   facts: ProtectedFact[];
 };
+
+export type LocalizedFactCandidate = {
+  placeholder: string;
+  value: string;
+};
+
+export type LocalizedProtectedFact = ProtectedFact & {
+  locale: "en" | "ru";
+  sourceValue: string;
+  sourceNormalizedValue: string;
+  localizationModel: string;
+};

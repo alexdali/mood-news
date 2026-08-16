@@ -45,13 +45,13 @@ export class RewriteService {
       throw new BudgetExceededError(env.MAX_DAILY_AI_COST_USD, spent);
     }
 
-    const protectedText = protectArticleText(article.id, article.title, article.summary);
-    this.facts.replaceForArticle(article.id, protectedText.facts);
+    const extractedText = protectArticleText(article.id, article.title, article.summary);
+    const persistedFacts = this.facts.replaceForArticle(article.id, extractedText.facts);
+    const protectedText = { ...extractedText, facts: persistedFacts };
 
     const result = await this.modelRouter.generate({
       articleId: article.id,
       protectedText,
-      original: { title: article.title, summary: article.summary },
       targetLocale: locale,
       systemPrompt: REWRITE_SYSTEM_PROMPT,
       userPrompt: buildRewriteUserPrompt({
@@ -64,8 +64,9 @@ export class RewriteService {
 
     const restoredVariants = result.payload.variants.map((variant) => ({
       mood: variant.mood,
-      ...restoreArticleFields({ title: variant.title, summary: variant.summary, facts: protectedText.facts }),
+      ...restoreArticleFields({ title: variant.title, summary: variant.summary, facts: result.localizedFacts }),
     }));
+    this.facts.saveLocalizations(article.id, locale, result.localizedFacts, result.model);
     this.rewrites.saveValidatedBatch({
       articleId: article.id,
       model: result.model,

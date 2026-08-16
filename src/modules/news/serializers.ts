@@ -25,6 +25,9 @@ export function serializeNewsDetail(view: NewsDetailView) {
     facts: view.facts.map((fact) => ({
       type: fact.factType,
       value: fact.value,
+      sourceValue: fact.sourceValue,
+      locale: fact.locale,
+      localizationModel: fact.localizationModel,
       placeholder: fact.placeholder,
       field: fact.sourceField,
       extractor: fact.extractor,

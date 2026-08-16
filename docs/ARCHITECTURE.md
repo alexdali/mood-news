@@ -78,12 +78,13 @@ article
 → fact extraction
 → overlap resolution
 → placeholders
-→ DeepSeek strict JSON
+→ DeepSeek strict JSON: localized fact ledger + 4 variants
 → schema validation
-→ Fact Lock
+→ locale fact validation
+→ Fact Lock against localized baseline
 → accepted OR Luna
 → same checks
-→ restore exact values
+→ restore accepted locale values
 → save 4 validated rewrites
 ```
 
@@ -95,6 +96,8 @@ article
 - Snapshot уникален по `(article_id, version)`.
 - Old rewrites после изменения получают `stale`.
 - В UI выбираются только `validated` rewrites текущего prompt version.
+- Canonical facts сохраняют source values и стабильные ID; языковые значения живут отдельно по `(fact_id, locale)`.
+- Для English fact values должны совпадать с источником; для Russian переводимы только нечисловые факты, при этом все numeric tokens сохраняются.
 - Любая модель проходит одинаковый deterministic gate.
 - Failure не скрывает original.
 - Model/prompt/cost/latency сохраняются.

@@ -31,6 +31,10 @@ class FakeClient implements AiModelClient {
       providerRequestId: `request_${input.model}`,
       rawContent: "{}",
       payload: {
+        localizedFacts: protectedText.facts.map((fact) => ({
+          placeholder: fact.placeholder,
+          value: fact.value,
+        })),
         variants: moods.map((mood) => ({
           mood,
           title: input.model === "primary-model" && this.primaryMode === "invalid" ? invalidTitle : protectedText.title,
@@ -69,12 +73,12 @@ describe("application-level model routing", () => {
     const result = await new ModelRouter(client, recorder).generate({
       articleId: "article_test",
       protectedText: currentProtectedText,
-      original: { title: sourceTitle, summary: sourceSummary },
       targetLocale: "en",
       systemPrompt: "system",
       userPrompt: "user",
     });
     expect(result.model).toBe("fallback-model");
+    expect(result.localizedFacts.map((fact) => fact.value)).toEqual(currentProtectedText.facts.map((fact) => fact.value));
     expect(client.calls).toEqual(["primary-model", "fallback-model"]);
     expect(recorder.records.map((record) => record.status)).toEqual(["api_error", "completed"]);
   });
@@ -85,7 +89,6 @@ describe("application-level model routing", () => {
     const result = await new ModelRouter(client, recorder).generate({
       articleId: "article_test",
       protectedText: currentProtectedText,
-      original: { title: sourceTitle, summary: sourceSummary },
       targetLocale: "en",
       systemPrompt: "system",
       userPrompt: "user",

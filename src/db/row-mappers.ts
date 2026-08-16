@@ -1,7 +1,7 @@
 import type { NewsArticle } from "@/domain/news/article";
 import type { NewsRewrite } from "@/domain/news/rewrite";
-import type { ProtectedFact } from "@/domain/fact-lock/fact";
-import type { NewsArticleRow, ProtectedFactRow, RewriteRow } from "@/db/schema";
+import type { LocalizedProtectedFact, ProtectedFact } from "@/domain/fact-lock/fact";
+import type { LocalizedProtectedFactRow, NewsArticleRow, ProtectedFactRow, RewriteRow } from "@/db/schema";
 import { isMood } from "@/domain/news/mood";
 
 export function mapArticleRow(row: NewsArticleRow): NewsArticle {
@@ -57,5 +57,18 @@ export function mapFactRow(row: ProtectedFactRow): ProtectedFact {
     endIndex: row.end_index,
     extractor: row.extractor,
     createdAt: row.created_at,
+  };
+}
+
+export function mapLocalizedFactRow(row: LocalizedProtectedFactRow): LocalizedProtectedFact {
+  const canonical = mapFactRow(row);
+  return {
+    ...canonical,
+    locale: row.locale,
+    sourceValue: canonical.value,
+    sourceNormalizedValue: canonical.normalizedValue,
+    value: row.localized_value ?? canonical.value,
+    normalizedValue: row.localized_normalized_value ?? canonical.normalizedValue,
+    localizationModel: row.localization_model ?? "source-fallback",
   };
 }

@@ -245,6 +245,8 @@ code {
 .facts-table__row { display: grid; grid-template-columns: 140px 120px minmax(0,1fr) 90px; gap: 12px; align-items: center; padding: 10px 13px; border-top: 1px solid var(--line); font-size: .78rem; }
 .facts-table__row:first-child { border-top: 0; }
 .facts-table__head { background: var(--surface-muted); color: var(--ink-soft); font-weight: 760; }
+.fact-value strong, .fact-value small { display: block; }
+.fact-value small { color: var(--ink-soft); margin-top: 3px; }
 .muted { color: var(--ink-soft); }
 
 .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }

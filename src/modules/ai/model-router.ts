@@ -10,6 +10,8 @@ import type { ValidatedModelResult } from "@/modules/ai/ai-types";
 import { validateProtectedVariant } from "@/modules/fact-lock/validator";
 import { logger } from "@/server/logger";
 import type { Locale } from "@/i18n/ui";
+import { validateFactLocalizations } from "@/modules/fact-lock/localization";
+import { restoreArticleFields } from "@/modules/fact-lock/restore";
 
 export interface AiRunRecorder {
   record(input: AiRunRecord): string;
@@ -24,7 +26,6 @@ export class ModelRouter {
   async generate(input: {
     articleId: string;
     protectedText: ProtectedArticleText;
-    original: { title: string; summary: string };
     targetLocale: Locale;
     systemPrompt: string;
     userPrompt: string;
@@ -46,11 +47,43 @@ export class ModelRouter {
           systemPrompt: input.systemPrompt,
           userPrompt: input.userPrompt,
         });
+        const localization = validateFactLocalizations({
+          facts: input.protectedText.facts,
+          candidates: result.payload.localizedFacts,
+          locale: input.targetLocale,
+        });
+        if (!localization.passed) {
+          this.aiRuns.record({
+            articleId: input.articleId,
+            model: result.model,
+            modelRole: attempt.role,
+            status: "validation_error",
+            locale: input.targetLocale,
+            latencyMs: result.latencyMs,
+            usage: result.usage,
+            providerRequestId: result.providerRequestId,
+            errorCode: "FACT_LOCALIZATION_REJECTED",
+            errorMessage: localization.issues.join(","),
+          });
+          lastError = new Error(`Fact localization rejected ${attempt.model}`);
+          logger.warn({ model: attempt.model, issues: localization.issues }, "Localized fact ledger failed validation; trying fallback");
+          continue;
+        }
+
+        const localizedProtectedText = {
+          ...input.protectedText,
+          facts: localization.facts,
+        };
+        const localizedBaseline = restoreArticleFields({
+          title: localizedProtectedText.title,
+          summary: localizedProtectedText.summary,
+          facts: localizedProtectedText.facts,
+        });
         const validations = new Map<Mood, FactValidationResult>();
         for (const variant of result.payload.variants) {
           validations.set(variant.mood, validateProtectedVariant({
-            protectedText: input.protectedText,
-            original: input.original,
+            protectedText: localizedProtectedText,
+            original: localizedBaseline,
             output: { title: variant.title, summary: variant.summary },
             targetLocale: input.targetLocale,
           }));
@@ -84,7 +117,7 @@ export class ModelRouter {
           usage: result.usage,
           providerRequestId: result.providerRequestId,
         });
-        return { ...result, validations };
+        return { ...result, localizedFacts: localization.facts, validations };
       } catch (error) {
         const status = classifyError(error);
         this.aiRuns.record({
