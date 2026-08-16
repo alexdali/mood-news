@@ -84,6 +84,18 @@ npm run test:e2e
 - Operations-экран `/ops` с временем последнего/следующего запроса новостей, расходами за всё время/по дням, токенами, кэшем, временем, полными промптами, исходными ответами и причинами отклонения Fact Lock; методология `/about`, health endpoint и защищённые job routes.
 - SQLite migrations, Docker Compose, production Dockerfile, CI и desktop/mobile тесты.
 
+### Скриншоты
+
+| Лента на desktop | Сравнение и Fact Lock |
+|---|---|
+| ![Лента Mood News Grid на desktop](docs/screenshots/01-home-grid-ru-desktop.png) | ![Сравнение исходного текста и AI-версии](docs/screenshots/02-article-fact-lock-ru.png) |
+
+| Operations | Методология |
+|---|---|
+| ![Операционный экран проекта](docs/screenshots/03-operations-ru.png) | ![Описание AI-пайплайна и Fact Lock](docs/screenshots/04-method-ru.png) |
+
+![Лента Mood News Grid на мобильном экране](docs/screenshots/05-home-grid-ru-mobile.png)
+
 ## Как устроена логика
 
 ### Импорт

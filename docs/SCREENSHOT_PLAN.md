@@ -1,52 +1,23 @@
-# План скриншотов
+# Скриншоты интерфейса
 
-## 1. Desktop neutral grid
+Изображения собраны на реальных импортированных новостях и не содержат API-ключей или других секретов.
 
-- 1440 px;
-- hero и mood switcher;
-- минимум 6 карточек;
-- source/time/Fact Lock badges.
+## Лента на desktop
 
-## 2. Mood contrast
+![Лента Mood News Grid на desktop](screenshots/01-home-grid-ru-desktop.png)
 
-- тот же dataset;
-- concerned или ironic;
-- visibly changed wording.
+## Сравнение и Fact Lock
 
-## 3. Comparison
+![Сравнение исходного текста и эмоциональной AI-версии](screenshots/02-article-fact-lock-ru.png)
 
-- original и rewrite рядом;
-- source link;
-- model/prompt;
-- Fact Lock status.
+## Operations
 
-## 4. Fact ledger
+![Операционный экран проекта](screenshots/03-operations-ru.png)
 
-- placeholders;
-- types;
-- exact source values;
-- title/summary field.
+## Методология
 
-## 5. Mobile
+![Описание AI-пайплайна и Fact Lock](screenshots/04-method-ru.png)
 
-- 390×844;
-- mood controls usable;
-- одна колонка;
-- no horizontal scroll.
+## Мобильная версия
 
-## 6. Engineering evidence
-
-Один вариант:
-
-- green unit/integration tests;
-- model benchmark report;
-- `/ops` screen;
-- SQLite inspect output.
-
-## Правила
-
-- только реальные product data;
-- скрыть API keys;
-- проверить source links;
-- screenshots должны соответствовать текущему commit;
-- не утверждать, что RSS excerpt — полный текст.
+![Лента Mood News Grid на мобильном экране](screenshots/05-home-grid-ru-mobile.png)
