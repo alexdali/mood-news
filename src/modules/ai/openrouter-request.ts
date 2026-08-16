@@ -14,6 +14,10 @@ export type OpenRouterRequestInput = {
   responseHealingEnabled: boolean;
 };
 
+const modelsWithoutTemperature = new Set([
+  "openai/gpt-5.6-luna",
+]);
+
 export function buildReasoningConfig(enabled: boolean, effort: ReasoningEffort) {
   if (!enabled) {
     return { enabled: false, exclude: true } as const;
@@ -29,7 +33,9 @@ export function buildOpenRouterRequest(input: OpenRouterRequestInput) {
       { role: "system", content: input.systemPrompt },
       { role: "user", content: input.userPrompt },
     ],
-    temperature: input.temperature,
+    // OpenRouter rejects a request before inference when require_parameters is
+    // enabled and the selected provider does not advertise temperature.
+    ...(modelsWithoutTemperature.has(input.model) ? {} : { temperature: input.temperature }),
     max_tokens: input.maxOutputTokens,
     reasoning: buildReasoningConfig(input.reasoningEnabled, input.reasoningEffort),
     response_format: {

@@ -33,6 +33,16 @@ describe("OpenRouter request builder", () => {
     expect(request.response_format.json_schema.strict).toBe(true);
   });
 
+  it("omits temperature for Luna because its OpenRouter endpoint does not support it", () => {
+    const request = buildOpenRouterRequest({ ...baseInput, model: "openai/gpt-5.6-luna" });
+    expect(request).not.toHaveProperty("temperature");
+    expect(request.provider.require_parameters).toBe(true);
+  });
+
+  it("keeps temperature for models that advertise it", () => {
+    expect(buildOpenRouterRequest(baseInput)).toHaveProperty("temperature", 0.35);
+  });
+
   it("enables response healing only when explicitly configured", () => {
     expect(buildOpenRouterRequest(baseInput)).not.toHaveProperty("plugins");
     expect(buildOpenRouterRequest({ ...baseInput, responseHealingEnabled: true })).toMatchObject({
