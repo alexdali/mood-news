@@ -1,0 +1,9 @@
+mood-news.testvps.click {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3001
+}
+
+:80 {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3000
+}
