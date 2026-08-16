@@ -11,6 +11,7 @@ export type AiRunRecord = {
   modelRole: AiModelRole;
   status: AiRunStatus;
   locale: Locale;
+  promptVersion: string;
   latencyMs: number;
   usage?: AiUsage;
   providerRequestId?: string | null;
@@ -25,10 +26,10 @@ export class AiRunRepository {
     const id = createId("ai");
     this.db.prepare(`
       INSERT INTO ai_runs(
-        id, article_id, model, model_role, status, locale, latency_ms,
+        id, article_id, model, model_role, status, locale, prompt_version, latency_ms,
         input_tokens, output_tokens, reasoning_tokens, cost_usd,
         provider_request_id, error_code, error_message, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       input.articleId,
@@ -36,6 +37,7 @@ export class AiRunRepository {
       input.modelRole,
       input.status,
       input.locale,
+      input.promptVersion,
       input.latencyMs,
       input.usage?.inputTokens ?? null,
       input.usage?.outputTokens ?? null,

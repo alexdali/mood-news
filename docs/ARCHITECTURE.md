@@ -101,6 +101,7 @@ article
 - Любая модель проходит одинаковый deterministic gate.
 - Failure не скрывает original.
 - Model/prompt/cost/latency сохраняются.
+- Pending queue ставит статьи без попыток текущей `(prompt_version, locale)` раньше повторных ошибок, не ослабляя проверки.
 
 ## Почему application-level fallback
 

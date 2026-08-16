@@ -200,10 +200,18 @@ export class NewsRepository {
        AND r.prompt_version = @promptVersion
        AND r.locale = @locale
        AND r.status = 'validated'
+      LEFT JOIN (
+        SELECT article_id, locale, prompt_version, COUNT(*) AS attempt_count
+        FROM ai_runs
+        GROUP BY article_id, locale, prompt_version
+      ) attempts
+        ON attempts.article_id = a.id
+       AND attempts.locale = @locale
+       AND attempts.prompt_version = @promptVersion
       WHERE a.status = 'active'
       GROUP BY a.id
       HAVING COUNT(r.id) < @expectedMoodCount
-      ORDER BY a.published_at DESC
+      ORDER BY COALESCE(attempts.attempt_count, 0), a.published_at DESC
       LIMIT @limit
     `).all({ promptVersion, locale, expectedMoodCount, limit }) as NewsArticleRow[];
     return rows.map(mapArticleRow);

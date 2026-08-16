@@ -108,6 +108,35 @@ describe("SQLite repositories", () => {
     });
   });
 
+  it("prioritizes unattempted rewrites over repeated failures for the current prompt", () => {
+    db = createDatabase(":memory:");
+    new SourceRepository(db).upsert({ id: "source", kind: "rss", name: "Source", baseUrl: "https://example.com/rss", enabled: true });
+    const news = new NewsRepository(db);
+    const failed = news.upsert({
+      sourceId: "source", sourceItemId: "retry-1", canonicalUrl: "https://example.com/retry-1",
+      title: "Newest article", summary: "Newest summary", section: null, language: "en", imageUrl: null, byline: null,
+      publishedAt: "2026-08-14T11:00:00Z", fetchedAt: "2026-08-14T11:01:00Z", contentHash: "retry-1", rawPayload: {},
+    });
+    const unattempted = news.upsert({
+      sourceId: "source", sourceItemId: "retry-2", canonicalUrl: "https://example.com/retry-2",
+      title: "Older article", summary: "Older summary", section: null, language: "en", imageUrl: null, byline: null,
+      publishedAt: "2026-08-14T10:00:00Z", fetchedAt: "2026-08-14T10:01:00Z", contentHash: "retry-2", rawPayload: {},
+    });
+    new AiRunRepository(db).record({
+      articleId: failed.articleId,
+      model: "model",
+      modelRole: "primary",
+      status: "validation_error",
+      locale: "ru",
+      promptVersion: "v-current",
+      latencyMs: 10,
+      errorCode: "FACT_LOCK_REJECTED",
+    });
+
+    expect(news.listPendingForPrompt("v-current", "ru", 4, 1)[0]?.id).toBe(unattempted.articleId);
+    expect(news.listPendingForPrompt("another-prompt", "ru", 4, 1)[0]?.id).toBe(failed.articleId);
+  });
+
   it("previews the Fact Lock ledger before an AI rewrite exists", () => {
     db = createDatabase(":memory:");
     new SourceRepository(db).upsert({ id: "source", kind: "rss", name: "Source", baseUrl: "https://example.com/rss", enabled: true });

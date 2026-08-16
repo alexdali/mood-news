@@ -38,6 +38,7 @@ export class RewriteService {
         modelRole: "primary",
         status: "budget_blocked",
         locale,
+        promptVersion: env.AI_PROMPT_VERSION,
         latencyMs: 0,
         errorCode: "AI_BUDGET_EXCEEDED",
         errorMessage: `Spent $${spent.toFixed(4)} of $${env.MAX_DAILY_AI_COST_USD.toFixed(2)}`,

@@ -131,6 +131,8 @@ Fact Lock проверяет:
 
 Если обе модели или проверки завершились ошибкой, система сохраняет original и повторяет попытку в следующем worker cycle. Непроверенный результат не публикуется.
 
+Очередь учитывает число AI-попыток отдельно для текущих `(prompt_version, locale)`: сначала обрабатываются ещё не проверенные статьи, поэтому одна стабильно отклоняемая новость не блокирует остальные.
+
 Web и worker работают независимо. Межпроцессные SQLite locks не позволяют одновременно выполнять один и тот же ingestion/rewrite job.
 
 ## Где хранятся данные
@@ -156,7 +158,7 @@ Web и worker работают независимо. Межпроцессные 
 | `protected_fact_localizations` | Проверенное значение каждого факта для `en` и `ru`, модель и связь с source value |
 | `rewrites` | Проверенные mood-версии с `locale` и prompt version |
 | `validation_runs` | Verdict и детали каждой проверки |
-| `ai_runs` | Модель, locale, tokens, latency, cost и ошибки |
+| `ai_runs` | Модель, prompt version, locale, tokens, latency, cost и ошибки |
 | `job_locks` | Locks фоновых заданий |
 | `app_events` | Operational audit events |
 | `schema_migrations` | Применённые SQL migrations |
