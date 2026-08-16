@@ -7,6 +7,18 @@ cp .env.example .env
 docker compose up --build
 ```
 
+Публикуемый адрес настраивается без изменения Compose-файла:
+
+```dotenv
+COMPOSE_PROJECT_NAME=mood_news
+WEB_BIND_ADDRESS=0.0.0.0
+WEB_PORT=3001
+APP_URL=http://SERVER_IP:3001
+OPENROUTER_SITE_URL=http://SERVER_IP:3001
+```
+
+Порт `3001` подходит для временного доступа по IP, если `80/443` уже обслуживают другой проект. Для домена рекомендуется `WEB_BIND_ADDRESS=127.0.0.1` и отдельный virtual host в reverse proxy.
+
 Сервисы:
 
 ```text

@@ -7,7 +7,7 @@ services:
       HOSTNAME: 0.0.0.0
       DATABASE_PATH: /app/data/mood-news.db
     ports:
-      - "3000:3000"
+      - "${WEB_BIND_ADDRESS:-0.0.0.0}:${WEB_PORT:-3000}:3000"
     volumes:
       - mood_news_data:/app/data
       - mood_news_reports:/app/reports

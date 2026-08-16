@@ -15,6 +15,8 @@ cp .env.example .env
 ```dotenv
 CRON_SECRET=длинная-случайная-строка
 OPENROUTER_API_KEY=ваш_ключ
+WEB_BIND_ADDRESS=0.0.0.0
+WEB_PORT=3000
 ```
 
 Ключ Guardian необязателен:
@@ -34,6 +36,8 @@ docker compose up -d --build
 - `web` — интерфейс и HTTP API;
 - `worker` — импорт новостей и генерацию AI-версий;
 - named volumes — постоянную SQLite-базу и отчёты.
+
+Если IP уже обслуживает другой проект на порту `80`, задайте Mood News отдельный порт, например `WEB_PORT=3001`, и откройте `http://IP_СЕРВЕРА:3001`. При появлении домена можно заменить bind address на `127.0.0.1` и проксировать приложение через Caddy/Nginx.
 
 Проверка:
 
