@@ -17,7 +17,7 @@ APP_URL=http://SERVER_IP:3001
 OPENROUTER_SITE_URL=http://SERVER_IP:3001
 ```
 
-Production URL: `https://mood-news.testvps.click`. `deploy/Caddyfile.vps` направляет этот host на `127.0.0.1:3001`, а существующий catch-all порта `80` оставляет соседний проект на `127.0.0.1:3000`. Для закрытия прямого доступа по IP используется `WEB_BIND_ADDRESS=127.0.0.1`.
+Production URL: `https://mood-news.testvps.click`. Общий `deploy/Caddyfile.vps` направляет этот host на `127.0.0.1:3001` и сохраняет соседний `moon-courier.testvps.click` на `127.0.0.1:3000`. Для закрытия прямого доступа по IP используется `WEB_BIND_ADDRESS=127.0.0.1`.
 
 Сервисы:
 
