@@ -16,13 +16,19 @@ export class OpsSummaryService {
 
   get(input: { aiPage?: number; validationPage?: number; pageSize?: number } = {}) {
     const env = getEnv();
+    const latestIngestion = this.ingestions.latest();
     const pageSize = Math.min(100, Math.max(10, input.pageSize ?? 25));
     const aiPage = Math.max(1, input.aiPage ?? 1);
     const validationPage = Math.max(1, input.validationPage ?? 1);
     return {
       articles: this.news.countActive(),
       validatedRewrites: this.rewrites.countValidated(env.AI_PROMPT_VERSION),
-      latestIngestion: this.ingestions.latest(),
+      latestIngestion,
+      ingestionSchedule: latestIngestion ? {
+        lastRequestedAt: latestIngestion.startedAt,
+        nextRequestedAt: nextIngestionAt(latestIngestion.startedAt, env.INGEST_INTERVAL_MS),
+        intervalMs: env.INGEST_INTERVAL_MS,
+      } : null,
       aiLast24Hours: this.aiRuns.summaryLast24Hours(),
       validation: this.metrics.validationSummary(),
       validationFailures: {
@@ -47,4 +53,8 @@ export class OpsSummaryService {
       },
     };
   }
+}
+
+export function nextIngestionAt(lastStartedAt: string, intervalMs: number): string {
+  return new Date(Date.parse(lastStartedAt) + intervalMs).toISOString();
 }

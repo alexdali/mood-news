@@ -81,7 +81,7 @@ npm run test:e2e
 - Fail-closed Fact Lock: непроверенный AI-текст не становится видимым как validated rewrite.
 - Primary/fallback routing моделей, дневной лимит расходов и подробный журнал каждой AI-попытки.
 - Отдельный worker с независимыми циклами ingestion и rewriting.
-- Operations-экран `/ops` с расходами за всё время/по дням, токенами, кэшем, временем, полными промптами, исходными ответами и причинами отклонения Fact Lock; методология `/about`, health endpoint и защищённые job routes.
+- Operations-экран `/ops` с временем последнего/следующего запроса новостей, расходами за всё время/по дням, токенами, кэшем, временем, полными промптами, исходными ответами и причинами отклонения Fact Lock; методология `/about`, health endpoint и защищённые job routes.
 - SQLite migrations, Docker Compose, production Dockerfile, CI и desktop/mobile тесты.
 
 ## Как устроена логика

@@ -263,7 +263,7 @@ code {
 .key-values div { display: flex; justify-content: space-between; gap: 18px; padding: 8px 0; border-top: 1px solid var(--line); font-size: .76rem; }
 .key-values div:first-child { border-top: 0; }
 .key-values dt { color: var(--ink-soft); }
-.key-values dd { margin: 0; text-align: right; font-weight: 650; }
+.key-values dd { margin: 0; text-align: right; font-weight: 650; overflow-wrap: anywhere; }
 .validation-meter strong { display: block; font-size: 3.3rem; letter-spacing: -.06em; color: var(--success); }
 .validation-meter span { color: var(--ink-soft); font-size: .8rem; }
 .ops-panel--validation { grid-column: 1 / -1; }

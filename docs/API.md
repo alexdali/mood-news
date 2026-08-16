@@ -51,7 +51,7 @@ Query:
 - `aiPage`: страница журнала AI-запросов;
 - `validationPage`: страница отклонений Fact Lock.
 
-Возвращает articles, rewrites, latest ingestion, AI 24h, validation summary, source counts, model route, расходы за всё время/по UTC-дням, постраничный журнал AI-запросов и постраничные подробности отклонений Fact Lock.
+Возвращает articles, rewrites, latest ingestion, `ingestionSchedule` с временем последнего и следующего запроса источников, AI 24h, validation summary, source counts, model route, расходы за всё время/по UTC-дням, постраничный журнал AI-запросов и постраничные подробности отклонений Fact Lock.
 
 ## Job auth
 

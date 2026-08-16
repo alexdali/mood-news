@@ -7,6 +7,7 @@ import { AiRequestLog } from "@/components/ops/ai-request-log";
 import { ValidationFailureLog } from "@/components/ops/validation-failure-log";
 import { CostHistory } from "@/components/ops/cost-history";
 import { AuditPagination } from "@/components/ops/audit-pagination";
+import { IngestionStatus } from "@/components/ops/ingestion-status";
 import { getLocale, uiCopy, withLocale } from "@/i18n/ui";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +34,7 @@ export default async function OperationsPage({ searchParams }: { searchParams: P
       </section>
       <section className="ops-layout">
         <article className="ops-panel"><h2>{copy.route}</h2><dl className="key-values"><div><dt>{copy.primary}</dt><dd><code>{summary.models.primary}</code></dd></div><div><dt>{copy.fallback}</dt><dd><code>{summary.models.fallback}</code></dd></div><div><dt>{copy.trigger}</dt><dd>{copy.triggerValue}</dd></div></dl></article>
-        <article className="ops-panel"><h2>{copy.ingestion}</h2>{ingestion ? <dl className="key-values"><div><dt>{copy.status}</dt><dd>{copy.statuses[ingestion.status]}</dd></div><div><dt>{copy.started}</dt><dd>{ingestion.startedAt}</dd></div><div><dt>{copy.fetched}</dt><dd>{ingestion.fetchedCount}</dd></div><div><dt>{copy.changed}</dt><dd>{ingestion.insertedCount} / {ingestion.updatedCount}</dd></div><div><dt>{copy.errors}</dt><dd>{ingestion.errorCount}</dd></div></dl> : <p className="muted">{copy.noIngestion}</p>}</article>
+        <article className="ops-panel"><h2>{copy.ingestion}</h2><IngestionStatus ingestion={ingestion} schedule={summary.ingestionSchedule} locale={locale} /></article>
         <article className="ops-panel ops-panel--validation" id="validation-failures">
           <h2>{copy.validation}</h2>
           {summary.validation.total > 0 ? <div className="validation-meter"><strong>{(summary.validation.passRate * 100).toFixed(1)}%</strong><span>{summary.validation.passed} / {summary.validation.total} {copy.validationBody}</span></div> : <p className="muted">{copy.noValidation}</p>}
