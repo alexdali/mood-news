@@ -42,5 +42,5 @@
 - [`IMPLEMENTATION_CHECKLIST.md`](IMPLEMENTATION_CHECKLIST.md) — инженерный checklist.
 - [`SUBMISSION_CHECKLIST_RU.md`](SUBMISSION_CHECKLIST_RU.md) — финальная проверка сдачи.
 - [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) — сценарии демонстрации на 90 секунд и 5–7 минут.
-- [`SCREENSHOT_PLAN.md`](SCREENSHOT_PLAN.md) — обязательные кадры.
+- [`SCREENSHOTS.md`](SCREENSHOTS.md) — галерея интерфейса.
 - [`ROADMAP.md`](ROADMAP.md) — развитие после тестового.

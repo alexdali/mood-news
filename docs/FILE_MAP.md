@@ -443,7 +443,7 @@ docs/DEPLOYMENT.md                Local, Docker, VPS deployment
 docs/POSTGRES_MIGRATION.md        Путь миграции persistence
 docs/ACCEPTANCE_MATRIX.md         Матрица требований задания
 docs/DEMO_SCRIPT.md               Demo на 90 секунд и 5–7 минут
-docs/SCREENSHOT_PLAN.md           План скриншотов
+docs/SCREENSHOTS.md               Галерея интерфейса
 docs/SUBMISSION_CHECKLIST_RU.md   Checklist сдачи
 docs/ROADMAP.md                   Следующие этапы
 docs/VALIDATION_REPORT.md          Что проверено в этом архиве и что нужно прогнать локально
