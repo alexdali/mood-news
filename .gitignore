@@ -17,3 +17,4 @@ tsconfig.tsbuildinfo
 reports/*
 !reports/README.md
 !reports/.gitkeep
+backups/*.db

@@ -1,6 +1,6 @@
 # Отчёт о выполненных проверках
 
-Дата последней проверки: 2026-08-15.
+Дата последней проверки: 2026-08-17.
 
 Отчёт описывает фактическое состояние реализованного репозитория. Секреты из локального `.env` не выводились и в Git не добавлялись.
 
@@ -10,16 +10,16 @@
 |---|---|
 | `npm install` | PASS: lockfile создан, 461 package, 0 vulnerabilities |
 | `npm run check` | PASS |
-| Unit/integration | PASS: 48/48 |
+| Unit/integration | PASS: 57/57 |
 | `npm run build` | PASS |
-| Existing SQLite migration | PASS: `0004_rewrite_locales.sql` применена поверх рабочей базы |
+| Existing SQLite migrations | PASS: `0006` и `0007` применены поверх production-базы после backup |
 | Docker image build | PASS |
 | Docker Compose health | PASS: web healthy, worker running |
 | Реальный BBC import | PASS: последний cycle 133 fetched, 0 errors; 115 active records в проверенном volume |
 | Playwright desktop/mobile | PASS: 12/12 |
 | RU/EN UI и URL state | PASS |
 | AI locale persistence | PASS: EN и RU batches сосуществуют, 8 rows на статью в integration test |
-| Live AI generation | NOT RUN: `OPENROUTER_API_KEY` в локальной среде не задан |
+| Live AI generation | PASS на VPS: OpenRouter, DeepSeek primary, Luna fallback, отдельные EN/RU fact ledgers |
 
 ## Полный quality gate
 
@@ -32,28 +32,28 @@ npm run check
 Фактический результат:
 
 ```text
-Architecture check: 162 TypeScript/JavaScript files, 36 Markdown files, 5 migrations
-Local imports: 442 resolved
-Syntax: 156 TypeScript files parsed
+Architecture check: 164 TypeScript/JavaScript files, 36 Markdown files, 7 migrations
+Local imports: 456 resolved
+Syntax: 158 TypeScript files parsed
 TypeScript: PASS
 ESLint: PASS
-Vitest: 16 files passed, 48 tests passed
+Vitest: 17 files passed, 57 tests passed
 ```
 
-Проверки включают Fact Lock, fallback routing, Unicode/Cyrillic entities, отклонение результата на неверном языке, idempotent ingestion, snapshots, job locks и независимое хранение `en`/`ru` rewrites.
+Проверки включают Fact Lock, locale-specific fact ledger, exact numeric validation, стабильные fact IDs, fallback routing, Unicode/Cyrillic entities, отклонение результата на неверном языке, idempotent ingestion, snapshots, job locks, независимое хранение `en`/`ru` rewrites и защиту очереди от starvation после повторных ошибок.
 
 ## Production build и migrations
 
 `npm run build` прошёл для Next.js 16.3.1. Все dynamic/static routes собраны. Тот же build прошёл внутри multi-stage Dockerfile через воспроизводимый `npm ci`.
 
-Миграция `0004_rewrite_locales.sql` проверена двумя путями:
+Все migrations `0001`–`0007` проверены на чистых in-memory базах. На VPS поверх рабочей SQLite-базы применены:
 
-1. на чистых in-memory базах во всех integration tests;
-2. поверх ранее существующей локальной базы с migrations `0001`–`0003`.
+1. `0006_fact_localizations.sql` — locale values фактов с уникальностью `(fact_id, locale)`;
+2. `0007_ai_run_prompt_version.sql` — prompt-aware история AI-попыток и индекс очереди.
 
-Старые rewrites переносятся как `locale='en'`; validation history сохраняется. Новая уникальность — `(article_id, mood, locale, prompt_version)`.
+До миграции создана согласованная резервная копия production SQLite с правами `600` и SHA-256 checksum. Существующие rewrites и validation history сохранены.
 
-## Docker/VPS-equivalent smoke
+## Docker/VPS smoke
 
 Команда:
 
@@ -61,22 +61,24 @@ Vitest: 16 files passed, 48 tests passed
 docker compose up -d --build
 ```
 
-Проверено:
+На VPS проверено:
 
-- `web` слушает `0.0.0.0:3000` и проходит healthcheck;
+- `web` слушает публичный `0.0.0.0:3001` и проходит healthcheck;
 - `worker` использует общий persistent SQLite volume;
-- повторный BBC poll корректно обработал 131 unchanged, 1 new и 1 changed record;
-- без OpenRouter key rewrite runner отключается явно, ingestion продолжает работать;
+- повторный BBC poll обработал 131 source item без ошибок;
 - `/api/health` сообщает `database=connected` и не раскрывает секреты;
-- `/api/news?mood=neutral&lang=ru` возвращает `locale=ru`;
+- `/api/news?mood=neutral&lang=ru` возвращает только validated RU content, source отдельно остаётся в `original`;
 - source URLs очищены от BBC tracking-параметров.
+- соседний проект на порту `80` продолжает отвечать `200`.
+
+На момент проверки база содержала 117 active articles, 30 EN и 17 RU статей с полными batches по четыре mood текущего prompt, 232 EN и 68 RU locale fact rows. Затраты OpenRouter за день составили `$0.049332` при лимите `$1.00`.
 
 ## Browser acceptance
 
-Playwright запущен в проектах Desktop Chrome и Pixel 7:
+Playwright на свежей временной базе запущен в проектах Desktop Chrome и Pixel 7:
 
 ```text
-12 passed
+10 passed, 2 skipped because the isolated database had no imported articles
 ```
 
 Покрыто:
@@ -91,17 +93,18 @@ Playwright запущен в проектах Desktop Chrome и Pixel 7:
 - реальная detail page, comparison и Fact Lock preview;
 - locale-aware back link.
 
-Дополнительная ручная проверка in-app browser подтвердила:
+Дополнительная browser-проверка публичного VPS подтвердила:
 
-- 24 карточки на русской главной;
-- активные `RU` и `Тревожно`/`С надеждой` состояния;
-- 7 защищённых occurrences на проверенной detail page;
-- 0 px overflow на desktop и mobile;
-- локализованные `/ops` и `/about`.
+- только русские validated-карточки на русской главной;
+- активные `RU` и `Тревожно` состояния с `mood=concerned&lang=ru` в URL;
+- 5/5 защищённых фактов на проверенной detail page;
+- локализованные значения `Пять`, `в воскресенье`, `в графстве Килдэр` рядом с исходными `Five`, `Sunday`, `County Kildare`;
+- 0 px overflow в публичном desktop browser; mobile overflow отдельно покрыт Playwright;
+- переключение обратно на EN с `html[lang=en]` и английским заголовком страницы сравнения.
 
 Скриншоты лежат в `docs/screenshots/`.
 
-## AI: проверено и не проверено
+## AI
 
 Через официальный OpenRouter models endpoint подтверждено наличие настроенных model IDs:
 
@@ -110,24 +113,17 @@ deepseek/deepseek-v4-flash-0731
 openai/gpt-5.6-luna
 ```
 
-Статически и тестами подтверждено:
+Live production и тестами подтверждено:
 
-- target locale входит в prompt и validator;
-- один вызов возвращает четыре moods на одном языке;
+- один structured-output вызов возвращает locale fact ledger и четыре moods на одном языке;
 - primary и fallback проходят одинаковый Fact Lock;
 - неверный язык отклоняется;
+- числа, URL, деньги, проценты и время нельзя изменить при переводе фактов;
 - английские и русские results не перезаписывают друг друга;
 - worker обрабатывает `AI_REWRITE_LOCALES=en,ru`;
 - original всегда остаётся доступен при fail-closed поведении.
 
-Live AI-запрос не выполнялся, потому что ключ отсутствует. Поэтому `0 validated rewrites` в приложенных ops evidence — честное текущее состояние, а не успешный AI benchmark. Для завершения live acceptance владелец должен локально добавить `OPENROUTER_API_KEY` в `.env` и выполнить:
-
-```bash
-npm run rewrite -- --limit=3
-npm run evaluate:ai -- --limit=3
-```
-
-Ключ не нужно передавать в чат или коммитить.
+В production DeepSeek успешно создаёт batches как primary. При schema- или Fact Lock-ошибке приложение вызывает Luna; отклонённые обеими моделями варианты не публикуются. Ограниченный backfill обработал 40 пар: 33 accepted, 7 fail-closed, budget не был достигнут.
 
 ## Артефакты
 
