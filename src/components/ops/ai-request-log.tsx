@@ -35,7 +35,7 @@ export function AiRequestLog({ rows, locale }: { rows: AiRunAudit[]; locale: Loc
               <div><span>{copy.cachedTokens}</span><strong>{metric(row.usage.cachedInputTokens, copy.notRecorded)}</strong></div>
               <div><span>{copy.cacheWriteTokens}</span><strong>{metric(row.usage.cacheWriteTokens, copy.notRecorded)}</strong></div>
               <div><span>{copy.duration}</span><strong>{row.latencyMs} ms</strong></div>
-              <div><span>{copy.cost}</span><strong>{row.usage.costUsd === null ? copy.notRecorded : formatUsd(row.usage.costUsd)}</strong></div>
+              <div><span>{copy.costAmount}</span><strong>{row.usage.costUsd === null ? copy.notRecorded : formatUsd(row.usage.costUsd)}</strong></div>
               <div><span>{copy.cacheStatus}</span><strong>{row.cacheStatus ?? copy.notRecorded}</strong></div>
             </div>
             <dl className="audit-meta">

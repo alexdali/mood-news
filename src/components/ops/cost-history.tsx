@@ -10,7 +10,7 @@ export function CostHistory({ rows, locale }: { rows: AiDailyCost[]; locale: Loc
     <div className="audit-table" role="table" aria-label={copy.costHistory}>
       <div className="audit-table__row audit-table__head" role="row">
         <span>{copy.dayUtc}</span><span>{copy.requestsShort}</span><span>{copy.inputTokens}</span>
-        <span>{copy.outputTokens}</span><span>{copy.cachedTokens}</span><span>{copy.cost}</span>
+        <span>{copy.outputTokens}</span><span>{copy.cachedTokens}</span><span>{copy.costAmount}</span>
       </div>
       {rows.map((row) => (
         <div className="audit-table__row" role="row" key={row.day}>
