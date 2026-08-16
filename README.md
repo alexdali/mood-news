@@ -37,7 +37,7 @@ docker compose up -d --build
 - `worker` — импорт новостей и генерацию AI-версий;
 - named volumes — постоянную SQLite-базу и отчёты.
 
-Production-развёртывание доступно на `https://mood-news.testvps.click`: Caddy принимает HTTPS и проксирует приложение на `127.0.0.1:3001`. Общая конфигурация находится в `deploy/Caddyfile.vps` и сохраняет отдельный virtual host соседнего проекта `moon-courier.testvps.click` на `127.0.0.1:3000`.
+Для production Caddy принимает HTTPS и проксирует Mood News на `127.0.0.1:3001`. Конфигурация virtual hosts находится в `deploy/Caddyfile.vps`; доменное имя задаётся под конкретное окружение.
 
 Проверка:
 
