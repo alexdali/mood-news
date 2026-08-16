@@ -14,14 +14,31 @@ export class OpsSummaryService {
     private readonly metrics = new MetricsRepository(),
   ) {}
 
-  get() {
+  get(input: { aiPage?: number; validationPage?: number; pageSize?: number } = {}) {
     const env = getEnv();
+    const pageSize = Math.min(100, Math.max(10, input.pageSize ?? 25));
+    const aiPage = Math.max(1, input.aiPage ?? 1);
+    const validationPage = Math.max(1, input.validationPage ?? 1);
     return {
       articles: this.news.countActive(),
       validatedRewrites: this.rewrites.countValidated(env.AI_PROMPT_VERSION),
       latestIngestion: this.ingestions.latest(),
       aiLast24Hours: this.aiRuns.summaryLast24Hours(),
       validation: this.metrics.validationSummary(),
+      validationFailures: {
+        total: this.aiRuns.countValidationFailures(),
+        page: validationPage,
+        pageSize,
+        rows: this.aiRuns.listValidationFailures(pageSize, (validationPage - 1) * pageSize),
+      },
+      aiAudit: {
+        total: this.aiRuns.countAll(),
+        page: aiPage,
+        pageSize,
+        rows: this.aiRuns.listRecent(pageSize, (aiPage - 1) * pageSize),
+        costAllTime: this.aiRuns.costAllTime(),
+        costByDay: this.aiRuns.costByDay(),
+      },
       sources: this.metrics.sourceCounts(),
       models: {
         primary: env.AI_PRIMARY_MODEL,

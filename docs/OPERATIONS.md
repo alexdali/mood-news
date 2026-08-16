@@ -59,6 +59,8 @@ UI:
 /ops
 ```
 
+Экран показывает общую стоимость и расходы по UTC-дням. В журнале можно развернуть каждую primary/fallback попытку и увидеть input/output/reasoning/cache tokens, cache status, стоимость, latency, provider request ID, system/user prompt, raw response и ошибку. В истории Fact Lock отдельно разворачиваются отклонённые ответы с проблемным mood, score, missing/duplicated/unknown placeholders, добавленными фактами и исходным ответом модели. Для исторических строк до migration `0008` отсутствующие поля помечаются как не записанные.
+
 CLI:
 
 ```bash

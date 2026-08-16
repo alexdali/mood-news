@@ -46,7 +46,12 @@ Query: `lang=en|ru`. Создаёт все четыре moods на выбран�
 
 ## `GET /api/ops/summary`
 
-Возвращает articles, rewrites, latest ingestion, AI 24h, validation summary, source counts и model route.
+Query:
+
+- `aiPage`: страница журнала AI-запросов;
+- `validationPage`: страница отклонений Fact Lock.
+
+Возвращает articles, rewrites, latest ingestion, AI 24h, validation summary, source counts, model route, расходы за всё время/по UTC-дням, постраничный журнал AI-запросов и постраничные подробности отклонений Fact Lock.
 
 ## Job auth
 

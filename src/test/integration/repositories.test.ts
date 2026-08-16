@@ -108,6 +108,54 @@ describe("SQLite repositories", () => {
     });
   });
 
+  it("stores request-level AI billing, cache, prompts and Fact Lock rejection details", () => {
+    db = createDatabase(":memory:");
+    new SourceRepository(db).upsert({ id: "source", kind: "rss", name: "Source", baseUrl: "https://example.com/rss", enabled: true });
+    const inserted = new NewsRepository(db).upsert({
+      sourceId: "source", sourceItemId: "audit-1", canonicalUrl: "https://example.com/audit",
+      title: "Audit headline", summary: "Audit summary", section: null, language: "en", imageUrl: null, byline: null,
+      publishedAt: "2026-08-14T10:00:00Z", fetchedAt: "2026-08-14T10:01:00Z", contentHash: "audit-hash", rawPayload: {},
+    });
+    const runs = new AiRunRepository(db);
+    runs.record({
+      articleId: inserted.articleId,
+      model: "provider/model",
+      modelRole: "primary",
+      status: "validation_error",
+      locale: "ru",
+      promptVersion: "v-audit",
+      latencyMs: 321,
+      usage: { inputTokens: 100, outputTokens: 40, reasoningTokens: 3, cachedInputTokens: 75, cacheWriteTokens: 10, costUsd: 0.0025 },
+      cacheStatus: "HIT",
+      providerRequestId: "request-1",
+      systemPrompt: "Preserve facts.",
+      userPrompt: "Rewrite this article.",
+      responseText: "{\"variants\":[]}",
+      errorCode: "FACT_LOCK_REJECTED",
+      errorMessage: "A protected value is missing.",
+      validationDetails: {
+        stage: "fact_lock",
+        variants: [{
+          mood: "neutral", score: 50, expectedCount: 2, preservedCount: 1,
+          missing: ["[[F_TITLE_1]]"], duplicates: [], unknown: [], addedFacts: [],
+          issues: [{ code: "missing_placeholder", message: "Placeholder is missing", field: "title", values: ["[[F_TITLE_1]]"] }],
+        }],
+      },
+    });
+
+    expect(runs.countAll()).toBe(1);
+    expect(runs.countValidationFailures()).toBe(1);
+    expect(runs.costAllTime()).toBeCloseTo(0.0025);
+    expect(runs.costByDay()[0]).toMatchObject({ requests: 1, inputTokens: 100, outputTokens: 40, cachedInputTokens: 75, costUsd: 0.0025 });
+    expect(runs.listRecent(10)[0]).toMatchObject({
+      articleTitle: "Audit headline", cacheStatus: "HIT", systemPrompt: "Preserve facts.", responseText: "{\"variants\":[]}",
+      usage: { inputTokens: 100, outputTokens: 40, reasoningTokens: 3, cachedInputTokens: 75, cacheWriteTokens: 10, costUsd: 0.0025 },
+    });
+    expect(runs.listValidationFailures(10)[0]?.validationDetails).toMatchObject({
+      stage: "fact_lock", variants: [{ mood: "neutral", missing: ["[[F_TITLE_1]]"] }],
+    });
+  });
+
   it("prioritizes unattempted rewrites over repeated failures for the current prompt", () => {
     db = createDatabase(":memory:");
     new SourceRepository(db).upsert({ id: "source", kind: "rss", name: "Source", baseUrl: "https://example.com/rss", enabled: true });

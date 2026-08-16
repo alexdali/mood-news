@@ -266,6 +266,62 @@ code {
 .key-values dd { margin: 0; text-align: right; font-weight: 650; }
 .validation-meter strong { display: block; font-size: 3.3rem; letter-spacing: -.06em; color: var(--success); }
 .validation-meter span { color: var(--ink-soft); font-size: .8rem; }
+.ops-panel--validation { grid-column: 1 / -1; }
+.validation-history { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 14px; }
+.validation-history > summary, .audit-item > summary, .validation-failure > summary, .audit-payload > summary {
+  cursor: pointer; list-style-position: inside; font-weight: 760;
+}
+.validation-history > summary { color: var(--accent); font-size: .82rem; }
+.cost-total { font-size: 1.2rem; white-space: nowrap; }
+.audit-table { overflow-x: auto; border: 1px solid var(--line); border-radius: 13px; }
+.audit-table__row {
+  min-width: 790px; display: grid; grid-template-columns: 1.15fr .65fr repeat(3, 1fr) .9fr;
+  gap: 15px; align-items: center; padding: 11px 14px; border-top: 1px solid var(--line); font-size: .76rem;
+}
+.audit-table__row:first-child { border-top: 0; }
+.audit-table__head { color: var(--ink-soft); background: var(--surface-muted); font-weight: 750; }
+.audit-intro { max-width: 850px; margin: -5px 0 18px; font-size: .82rem; }
+.audit-list, .validation-failures { display: grid; gap: 9px; }
+.audit-item, .validation-failure { border: 1px solid var(--line); border-radius: 13px; background: #fff; overflow: hidden; }
+.audit-item > summary {
+  display: grid; grid-template-columns: 125px minmax(150px, 1.4fr) minmax(220px, 1fr) 90px;
+  gap: 12px; align-items: center; padding: 13px 15px; font-size: .76rem;
+}
+.audit-item[open] > summary, .validation-failure[open] > summary { background: var(--surface-muted); border-bottom: 1px solid var(--line); }
+.audit-status { width: fit-content; padding: 5px 8px; border-radius: 999px; font-size: .66rem; text-transform: uppercase; letter-spacing: .04em; }
+.audit-status--completed { color: var(--success); background: #e5f4ed; }
+.audit-status--validation_error, .audit-status--api_error, .audit-status--parse_error { color: var(--danger); background: #fae8e6; }
+.audit-status--budget_blocked { color: var(--warning); background: #fbf2dc; }
+.audit-item__body, .validation-failure__body { padding: 17px; }
+.audit-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+.audit-metrics > div { padding: 10px; border-radius: 10px; background: var(--surface-muted); }
+.audit-metrics span, .audit-metrics strong { display: block; }
+.audit-metrics span { margin-bottom: 4px; color: var(--ink-soft); font-size: .68rem; }
+.audit-metrics strong { font-size: .83rem; overflow-wrap: anywhere; }
+.audit-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 22px; margin: 14px 0; }
+.audit-meta div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: .74rem; }
+.audit-meta dt { color: var(--ink-soft); }
+.audit-meta dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+.audit-meta a { color: var(--accent); font-weight: 720; }
+.audit-error { margin: 12px 0; padding: 12px 14px; border-radius: 10px; color: var(--danger); background: #fae8e6; }
+.audit-error p, .audit-error-text { margin: 5px 0 0; font-size: .76rem; line-height: 1.5; }
+.audit-payload { margin-top: 9px; border: 1px solid var(--line); border-radius: 10px; }
+.audit-payload > summary { padding: 10px 12px; color: var(--accent); font-size: .74rem; }
+.audit-payload pre { max-height: 480px; margin: 0; padding: 13px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; border-top: 1px solid var(--line); background: #f7f8f5; font-size: .7rem; line-height: 1.55; }
+.audit-payload p { padding: 0 13px 11px; font-size: .74rem; }
+.validation-failures { margin-top: 14px; }
+.validation-failure > summary { display: flex; justify-content: space-between; gap: 14px; padding: 12px 14px; font-size: .76rem; }
+.validation-failure > summary span { color: var(--ink-soft); font-weight: 500; text-align: right; }
+.validation-failure__body > a { color: var(--accent); font-weight: 760; }
+.validation-failure__body ul { margin: 8px 0; padding-left: 20px; }
+.validation-failure__body li { margin: 6px 0; font-size: .75rem; line-height: 1.5; }
+.validation-failure__body li small { display: block; color: var(--ink-soft); }
+.failed-variant { margin-top: 12px; padding: 13px; border: 1px solid var(--line); border-radius: 10px; }
+.failed-variant header { display: flex; justify-content: space-between; gap: 14px; font-size: .76rem; }
+.failed-variant header span { color: var(--danger); font-weight: 760; }
+.audit-pagination { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 16px; font-size: .76rem; }
+.audit-pagination a { padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--accent); font-weight: 720; }
+.audit-pagination span[aria-disabled="true"] { padding: 7px 10px; color: #9ca29e; }
 .simple-table { border: 1px solid var(--line); border-radius: 13px; overflow: hidden; }
 .simple-table__row { display: grid; grid-template-columns: 1.4fr 1.6fr .5fr; gap: 16px; padding: 11px 14px; border-top: 1px solid var(--line); font-size: .78rem; }
 .simple-table__row:first-child { border-top: 0; }
@@ -293,6 +349,7 @@ code {
   .hero { grid-template-columns: 1fr; gap: 25px; }
   .hero__control { max-width: 620px; }
   .ops-layout { grid-template-columns: 1fr; }
+  .audit-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
   .page-shell, .site-footer { width: min(100% - 24px, 1240px); }
@@ -316,5 +373,10 @@ code {
   .simple-table__row { min-width: 650px; }
   .method-panel { padding: 20px; }
   .method-panel > header { align-items: flex-start; flex-direction: column; }
+  .audit-item > summary { grid-template-columns: 1fr auto; }
+  .audit-item > summary span:nth-child(3) { grid-column: 1 / -1; }
+  .audit-meta, .audit-metrics { grid-template-columns: 1fr; }
+  .validation-failure > summary { flex-direction: column; }
+  .validation-failure > summary span { text-align: left; }
   .site-footer { flex-direction: column; }
 }

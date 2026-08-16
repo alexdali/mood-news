@@ -62,9 +62,14 @@ export class ModelRouter {
             promptVersion: env.AI_PROMPT_VERSION,
             latencyMs: result.latencyMs,
             usage: result.usage,
+            cacheStatus: result.cacheStatus,
             providerRequestId: result.providerRequestId,
             errorCode: "FACT_LOCALIZATION_REJECTED",
             errorMessage: localization.issues.join(","),
+            systemPrompt: input.systemPrompt,
+            userPrompt: input.userPrompt,
+            responseText: result.rawContent,
+            validationDetails: { stage: "fact_localization", issues: localization.issues },
           });
           lastError = new Error(`Fact localization rejected ${attempt.model}`);
           logger.warn({ model: attempt.model, issues: localization.issues }, "Localized fact ledger failed validation; trying fallback");
@@ -100,9 +105,17 @@ export class ModelRouter {
             promptVersion: env.AI_PROMPT_VERSION,
             latencyMs: result.latencyMs,
             usage: result.usage,
+            cacheStatus: result.cacheStatus,
             providerRequestId: result.providerRequestId,
             errorCode: "FACT_LOCK_REJECTED",
             errorMessage: failed.map(([mood, validation]) => `${mood}: ${validation.issues.map((issue) => issue.code).join(",")}`).join("; "),
+            systemPrompt: input.systemPrompt,
+            userPrompt: input.userPrompt,
+            responseText: result.rawContent,
+            validationDetails: {
+              stage: "fact_lock",
+              variants: failed.map(([mood, validation]) => ({ mood, ...validation })),
+            },
           });
           lastError = new Error(`Fact Lock rejected ${attempt.model}`);
           logger.warn({ model: attempt.model, failed: [...failed.keys()] }, "Model output failed Fact Lock; trying fallback");
@@ -118,7 +131,11 @@ export class ModelRouter {
           promptVersion: env.AI_PROMPT_VERSION,
           latencyMs: result.latencyMs,
           usage: result.usage,
+          cacheStatus: result.cacheStatus,
           providerRequestId: result.providerRequestId,
+          systemPrompt: input.systemPrompt,
+          userPrompt: input.userPrompt,
+          responseText: result.rawContent,
         });
         return { ...result, localizedFacts: localization.facts, validations };
       } catch (error) {
@@ -132,9 +149,13 @@ export class ModelRouter {
           promptVersion: env.AI_PROMPT_VERSION,
           latencyMs: Date.now() - startedAt,
           usage: error instanceof AiResponseParseError ? error.usage : undefined,
+          cacheStatus: error instanceof AiResponseParseError ? error.cacheStatus : undefined,
           providerRequestId: error instanceof AiResponseParseError ? error.providerRequestId : undefined,
           errorCode: error instanceof Error ? error.name : "UNKNOWN",
           errorMessage: error instanceof Error ? error.message : String(error),
+          systemPrompt: input.systemPrompt,
+          userPrompt: input.userPrompt,
+          responseText: error instanceof AiResponseParseError ? error.rawContent : undefined,
         });
         lastError = error;
         logger.warn({ err: error, model: attempt.model, role: attempt.role }, "AI attempt failed; trying next model");

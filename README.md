@@ -79,9 +79,9 @@ npm run test:e2e
 - Язык интерфейса определяет язык AI-контента; настроение и язык сохраняются в URL.
 - Ссылка на оригинальный источник, время публикации и время импорта.
 - Fail-closed Fact Lock: непроверенный AI-текст не становится видимым как validated rewrite.
-- Primary/fallback routing моделей, дневной лимит расходов и журнал AI-попыток.
+- Primary/fallback routing моделей, дневной лимит расходов и подробный журнал каждой AI-попытки.
 - Отдельный worker с независимыми циклами ingestion и rewriting.
-- Operations-экран `/ops`, методология `/about`, health endpoint и защищённые job routes.
+- Operations-экран `/ops` с расходами за всё время/по дням, токенами, кэшем, временем, полными промптами, исходными ответами и причинами отклонения Fact Lock; методология `/about`, health endpoint и защищённые job routes.
 - SQLite migrations, Docker Compose, production Dockerfile, CI и desktop/mobile тесты.
 
 ## Как устроена логика
@@ -158,7 +158,7 @@ Web и worker работают независимо. Межпроцессные 
 | `protected_fact_localizations` | Проверенное значение каждого факта для `en` и `ru`, модель и связь с source value |
 | `rewrites` | Проверенные mood-версии с `locale` и prompt version |
 | `validation_runs` | Verdict и детали каждой проверки |
-| `ai_runs` | Модель, prompt version, locale, tokens, latency, cost и ошибки |
+| `ai_runs` | Каждая primary/fallback попытка: модель, locale, tokens, cache read/write, latency, cost, полные промпты, сырой ответ и структурированные причины отклонения |
 | `job_locks` | Locks фоновых заданий |
 | `app_events` | Operational audit events |
 | `schema_migrations` | Применённые SQL migrations |
@@ -185,7 +185,7 @@ AI_PROMPT_VERSION=mood-v2-localized-facts
 - GPT-5.6 Luna используется как application-level fallback после provider-, parse-, schema- или Fact Lock-ошибки.
 - Обе модели проходят одинаковую детерминированную проверку; fallback не получает дополнительных прав на публикацию.
 - Модель работает с защищённым placeholder-текстом; код отдельно проверяет перевод каждого факта, цифры и exact-типы, а затем восстанавливает только принятые значения выбранного языка.
-- В `ai_runs` записываются model role, locale, tokens, reasoning tokens, latency, provider request ID, cost и ошибки.
+- В `ai_runs` записываются model role, locale, input/output/reasoning/cache tokens, latency, provider request ID, cost, snapshot обоих промптов, исходный ответ и структурированные причины Fact Lock. Для записей, созданных до migration `0008`, новые поля честно показываются как не записанные.
 - `MAX_DAILY_AI_COST_USD` ограничивает дневные расходы.
 - При пустом `OPENROUTER_API_KEY` AI runner отключается, но импорт и отображение original продолжают работать.
 

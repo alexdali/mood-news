@@ -41,7 +41,15 @@ class FakeClient implements AiModelClient {
           summary: protectedText.summary,
         })),
       },
-      usage: { inputTokens: 100, outputTokens: 100, reasoningTokens: 0, costUsd: 0.001 },
+      usage: {
+        inputTokens: 100,
+        outputTokens: 100,
+        reasoningTokens: 0,
+        cachedInputTokens: 40,
+        cacheWriteTokens: 0,
+        costUsd: 0.001,
+      },
+      cacheStatus: null,
       latencyMs: 5,
     };
   }
@@ -81,6 +89,7 @@ describe("application-level model routing", () => {
     expect(result.localizedFacts.map((fact) => fact.value)).toEqual(currentProtectedText.facts.map((fact) => fact.value));
     expect(client.calls).toEqual(["primary-model", "fallback-model"]);
     expect(recorder.records.map((record) => record.status)).toEqual(["api_error", "completed"]);
+    expect(recorder.records[1]).toMatchObject({ systemPrompt: "system", userPrompt: "user", responseText: "{}" });
   });
 
   it("falls back after deterministic Fact Lock rejection", async () => {
@@ -95,5 +104,6 @@ describe("application-level model routing", () => {
     });
     expect(result.model).toBe("fallback-model");
     expect(recorder.records.map((record) => record.status)).toEqual(["validation_error", "completed"]);
+    expect(recorder.records[0]?.validationDetails).toMatchObject({ stage: "fact_lock" });
   });
 });

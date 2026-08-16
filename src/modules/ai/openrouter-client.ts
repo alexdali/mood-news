@@ -14,6 +14,8 @@ export class AiResponseParseError extends SyntaxError {
     public readonly usage: AiUsage,
     public readonly providerRequestId: string | null,
     public readonly providerModel: string,
+    public readonly rawContent: string | null,
+    public readonly cacheStatus: string | null,
   ) {
     super(message);
     this.name = "AiResponseParseError";
@@ -86,10 +88,11 @@ export class OpenRouterClient implements AiModelClient {
 
     const providerModel = payload.model ?? input.model;
     const providerRequestId = payload.id ?? null;
+    const cacheStatus = response.headers.get("x-openrouter-cache-status");
     const usage = mapOpenRouterUsage(payload);
     const content = payload.choices?.[0]?.message?.content;
     if (!content) {
-      throw new AiResponseParseError("Model returned empty content", usage, providerRequestId, providerModel);
+      throw new AiResponseParseError("Model returned empty content", usage, providerRequestId, providerModel, null, cacheStatus);
     }
 
     try {
@@ -101,11 +104,12 @@ export class OpenRouterClient implements AiModelClient {
         rawContent: content,
         payload: parsed,
         usage,
+        cacheStatus,
         latencyMs: Date.now() - startedAt,
       };
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
-      throw new AiResponseParseError(`Invalid structured model output: ${reason}`, usage, providerRequestId, providerModel);
+      throw new AiResponseParseError(`Invalid structured model output: ${reason}`, usage, providerRequestId, providerModel, content, cacheStatus);
     }
   }
 }

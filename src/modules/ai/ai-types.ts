@@ -28,6 +28,10 @@ export type OpenRouterModelResponse = {
     completion_tokens?: number;
     total_tokens?: number;
     cost?: number;
+    prompt_tokens_details?: {
+      cached_tokens?: number;
+      cache_write_tokens?: number;
+    };
     completion_tokens_details?: {
       reasoning_tokens?: number;
     };
@@ -45,6 +49,7 @@ export type ModelCallResult = {
   rawContent: string;
   payload: AiRewritePayload;
   usage: AiUsage;
+  cacheStatus: string | null;
   latencyMs: number;
 };
 

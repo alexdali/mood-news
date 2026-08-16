@@ -55,7 +55,9 @@ Fact ledger текущей версии. Содержит точное знач�
 
 ## `ai_runs`
 
-Каждая попытка primary/fallback с `locale`. Стоимость берётся из provider response, если доступна.
+Каждая попытка primary/fallback с `locale`. Стоимость и input/output/reasoning/cache tokens берутся из provider response, если доступны. Для воспроизводимости сохраняются system/user prompt, raw model response, provider request ID, cache status и latency. Fact Lock rejection дополнительно хранит JSON с проблемными mood-вариантами, score, missing/duplicated/unknown placeholders, добавленными фактами и точными validation issues.
+
+Старые строки, созданные до migration `0008`, остаются валидными: неизвестные audit-поля имеют `NULL` и в UI помечаются как не записанные.
 
 ## `job_locks`
 
