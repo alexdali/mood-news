@@ -13,7 +13,15 @@ export class NewsQueryService {
 
   list(input: { mood: Mood; locale: Locale; limit?: number; offset?: number }): NewsCardView[] {
     const env = getEnv();
-    const articles = this.news.list({ limit: input.limit ?? env.NEWS_PAGE_SIZE, offset: input.offset ?? 0 });
+    const page = { limit: input.limit ?? env.NEWS_PAGE_SIZE, offset: input.offset ?? 0 };
+    const articles = input.locale === "ru"
+      ? this.news.listWithValidatedRewrite({
+        ...page,
+        mood: input.mood,
+        locale: input.locale,
+        promptVersion: env.AI_PROMPT_VERSION,
+      })
+      : this.news.list(page);
     return articles.map((article) => {
       const result = this.rewrites.find(article.id, input.mood, input.locale, env.AI_PROMPT_VERSION);
       return {

@@ -12,6 +12,7 @@ import { NewsDetailService } from "@/modules/news/news-detail-service";
 import type { FactValidationResult } from "@/domain/fact-lock/validation";
 import { moods } from "@/domain/news/mood";
 import { protectArticleText } from "@/modules/fact-lock/placeholder";
+import { NewsQueryService } from "@/modules/news/news-query-service";
 
 let db: SqliteDatabase | undefined;
 afterEach(() => db?.close());
@@ -157,6 +158,41 @@ describe("SQLite repositories", () => {
     expect(rewrites.find(inserted.articleId, "neutral", "en", "v1")?.rewrite.title).toBe("English neutral");
     expect(rewrites.find(inserted.articleId, "neutral", "ru", "v1")?.rewrite.title).toBe("Русский neutral");
     expect(rewrites.countValidated("v1")).toBe(8);
+  });
+
+  it("never exposes an English source item as Russian grid content", () => {
+    db = createDatabase(":memory:");
+    new SourceRepository(db).upsert({ id: "source", kind: "rss", name: "Source", baseUrl: "https://example.com/rss", enabled: true });
+    const news = new NewsRepository(db);
+    const inserted = news.upsert({
+      sourceId: "source", sourceItemId: "ru-grid-1", canonicalUrl: "https://example.com/ru-grid",
+      title: "English source title", summary: "English source summary.",
+      section: null, language: "en", imageUrl: null, byline: null,
+      publishedAt: "2026-08-14T10:00:00Z", fetchedAt: "2026-08-14T10:01:00Z",
+      contentHash: "ru-grid-hash", rawPayload: {},
+    });
+    const rewrites = new RewriteRepository(db);
+    const service = new NewsQueryService(news, rewrites);
+
+    expect(service.list({ mood: "neutral", locale: "ru" })).toEqual([]);
+
+    const validation: FactValidationResult = {
+      passed: true, score: 100, expectedCount: 0, preservedCount: 0,
+      missing: [], duplicates: [], unknown: [], addedFacts: [], issues: [],
+    };
+    rewrites.saveValidatedBatch({
+      articleId: inserted.articleId,
+      locale: "ru",
+      model: "model",
+      promptVersion: "mood-v2-localized-facts",
+      validations: new Map(moods.map((mood) => [mood, validation])),
+      variants: moods.map((mood) => ({ mood, title: `Русский ${mood}`, summary: "Русское описание" })),
+    });
+
+    const russian = service.list({ mood: "neutral", locale: "ru" });
+    expect(russian).toHaveLength(1);
+    expect(russian[0]?.displayTitle).toBe("Русский neutral");
+    expect(service.list({ mood: "neutral", locale: "en" })[0]?.displayTitle).toBe("English source title");
   });
 
   it("stores separate localized values for each canonical fact", () => {

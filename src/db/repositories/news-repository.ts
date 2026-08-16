@@ -7,6 +7,7 @@ import { createId } from "@/core/ids";
 import { nowIso } from "@/core/time";
 import { SnapshotRepository } from "@/db/repositories/snapshot-repository";
 import type { Locale } from "@/i18n/ui";
+import type { Mood } from "@/domain/news/mood";
 
 export type ArticleUpsertInput = {
   sourceId: string;
@@ -162,6 +163,30 @@ export class NewsRepository {
       limit: input.limit,
       offset: input.offset ?? 0,
     }) as NewsArticleRow[];
+    return rows.map(mapArticleRow);
+  }
+
+  listWithValidatedRewrite(input: {
+    promptVersion: string;
+    locale: Locale;
+    mood: Mood;
+    limit: number;
+    offset?: number;
+  }): NewsArticle[] {
+    const rows = this.db.prepare(`
+      SELECT a.*, s.name AS source_name
+      FROM news_articles a
+      JOIN sources s ON s.id = a.source_id
+      JOIN rewrites r
+        ON r.article_id = a.id
+       AND r.prompt_version = @promptVersion
+       AND r.locale = @locale
+       AND r.mood = @mood
+       AND r.status = 'validated'
+      WHERE a.status = 'active'
+      ORDER BY a.published_at DESC
+      LIMIT @limit OFFSET @offset
+    `).all({ ...input, offset: input.offset ?? 0 }) as NewsArticleRow[];
     return rows.map(mapArticleRow);
   }
 
